@@ -641,9 +641,9 @@ document.getElementById("save").addEventListener("click",function(){
   return;
  }
 
- guardarEtapaAtual();
-
- registros.unshift({
+ /* O registro salvo guarda todos os dados e as fotos. Depois disso,
+    o formulário é liberado para o próximo imóvel, sem apagar o registro. */
+ var registro={
   id:Date.now(),
   etapa:etapaAtual,
   data:data.value,
@@ -655,7 +655,9 @@ document.getElementById("save").addEventListener("click",function(){
   desocupado:desocupado,
   fotos:fotosAtuais.slice(),
   foto:fotosAtuais[fotosAtuais.length-1]||null
- });
+ };
+
+ registros.unshift(registro);
 
  try{
   localStorage.setItem(REGISTROS,JSON.stringify(registros));
@@ -664,8 +666,39 @@ document.getElementById("save").addEventListener("click",function(){
   alert("O registro não pôde ser salvo porque o armazenamento do iPhone ficou cheio. Reduza a quantidade/tamanho das fotos e tente novamente.");
   return;
  }
+
+ /* Mantém a etapa escolhida, mas limpa endereço, medidor, leituras e fotos
+    para o próximo lançamento. A data continua automática. */
+ dadosEtapas[String(etapaAtual)]={
+  endereco:"",
+  numero:"",
+  medidor:"",
+  leituras:[""],
+  leitura:"",
+  data:hoje(),
+  desocupado:false,
+  fotos:[],
+  foto:null
+ };
+ guardarEtapas();
+
+ endereco.value="";
+ numero.value="";
+ medidor.value="";
+ leiturasAtuais=[""];
+ data.value=hoje();
+ desocupado=false;
+ vacant.checked=false;
+ fotosAtuais=[];
+ fotoAtual=null;
+ photoList.innerHTML="";
+ cameraInput.value="";
+ galleryInput.value="";
+ cropPanel.style.display="none";
+ renderLeituras();
  render();
- alert("Registro salvo.");
+
+ alert("Registro salvo. Pronto para o próximo imóvel.");
 });
 
 /* LIMPAR */
@@ -737,8 +770,13 @@ function render(){
     '<div>Leitura'+((r.leituras&&r.leituras.length>1)?"s":"")+': <b>'+
     esc((r.leituras&&r.leituras.length)?r.leituras.join(" / "):r.leitura)+'</b></div>')+
    (r.fotos&&r.fotos.length?
-    '<div style="display:grid;gap:8px;margin-top:8px">'+r.fotos.map(function(f,i){
-      return '<img src="'+f+'" alt="Foto '+(i+1)+'" style="width:100%;max-height:300px;object-fit:contain;border-radius:9px;background:#eee">';
+    '<div style="display:grid;gap:6px;margin-top:8px">'+
+    r.fotos.map(function(f,i){
+      return '<div style="display:grid;gap:4px">'+
+       '<img src="'+f+'" alt="Foto '+(i+1)+'" style="width:100%;max-height:300px;object-fit:contain;border-radius:9px;background:#eee">'+
+       '<div style="font-size:13px;font-weight:700;color:#0f4d2e;text-align:center">'+
+       esc(r.endereco)+(r.numero?" - Nº "+esc(r.numero):"")+
+       '</div></div>';
     }).join("")+'</div>':
     (r.foto?'<div class="preview" style="display:block"><img src="'+r.foto+'"></div>':""))+
    '<button type="button" class="btn red" data-del="'+r.id+'">Excluir</button>';
