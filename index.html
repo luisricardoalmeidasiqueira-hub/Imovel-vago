@@ -2,65 +2,87 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#123B63">
 <title>Leitura - Imóveis Vagos</title>
 <style>
 :root{--azul:#123B63;--azul-esc:#0B2945;--borda:#c5cfd8;--texto:#1f2937;--suave:#667085}
 *{box-sizing:border-box}
 html,body{margin:0;padding:0}
-body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;background:#eef2f6;color:var(--texto);font-size:14px;-webkit-text-size-adjust:100%}
-header{background:var(--azul);color:#fff;text-align:center;padding:12px;padding-top:calc(12px + env(safe-area-inset-top,0px));font-weight:700;font-size:16px}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;background:#eef2f6;color:var(--texto);font-size:13px;-webkit-text-size-adjust:100%}
+header{position:sticky;top:0;z-index:5;background:var(--azul);color:#fff;text-align:center;padding:10px 12px;padding-top:calc(10px + env(safe-area-inset-top,0px));font-weight:700;font-size:15px}
 main{max-width:700px;margin:auto;padding:10px}
 .card{background:#fff;border-radius:12px;padding:12px;margin-bottom:10px;box-shadow:0 1px 5px rgba(0,0,0,.07)}
-h2{font-size:16px;margin:0 0 4px}
-.help{font-size:12px;color:var(--suave);margin-bottom:6px}
-label{display:block;font-weight:600;font-size:13px;margin:10px 0 4px}
-input[type=text],input[type=date],select{display:block;width:100%;min-width:0;height:40px;border:1px solid var(--borda);border-radius:8px;padding:0 10px;font-size:15px;background:#fff;color:var(--texto);font-family:inherit}
-input[type=date]{-webkit-appearance:none;appearance:none;text-align:left;line-height:40px}
+h2{font-size:15px;margin:0 0 4px}
+.help{font-size:11px;color:var(--suave);margin-bottom:6px}
+label{display:block;font-weight:600;font-size:12px;margin:9px 0 4px}
+input[type=text],input[type=date],select{display:block;width:100%;min-width:0;height:36px;border:1px solid var(--borda);border-radius:8px;padding:0 10px;font-size:14px;background:#fff;color:var(--texto);font-family:inherit}
+input[type=date]{-webkit-appearance:none;appearance:none;text-align:left;line-height:36px}
 input[type=date]::-webkit-date-and-time-value{text-align:left}
 input:focus,select:focus{outline:none;border-color:var(--azul);box-shadow:0 0 0 2px rgba(18,59,99,.15)}
 input:disabled{opacity:.45}
-.stage-select{height:44px;border:2px solid var(--azul);border-radius:10px;font-weight:700}
-.linha{display:grid;grid-template-columns:minmax(0,1fr) 88px;gap:8px}
+.stage-select{height:40px;border:2px solid var(--azul);border-radius:10px;font-weight:700;font-size:14px}
+.linha{display:grid;grid-template-columns:minmax(0,1fr) 80px;gap:8px}
 .reading-row{display:none}
-.vacant-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:14px 0 4px}
-.vacant-row label{margin:0;font-size:14px;cursor:pointer}
-.vacant-checkbox{-webkit-appearance:none;appearance:none;flex:0 0 28px;width:28px;height:28px;margin:0;border:2px solid var(--azul);border-radius:6px;background:#fff;position:relative;cursor:pointer}
+.vacant-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:12px 0 4px}
+.vacant-row label{margin:0;font-size:13px;cursor:pointer}
+.vacant-checkbox{-webkit-appearance:none;appearance:none;flex:0 0 24px;width:24px;height:24px;margin:0;border:2px solid var(--azul);border-radius:6px;background:#fff;position:relative;cursor:pointer}
 .vacant-checkbox:checked{background:var(--azul)}
-.vacant-checkbox:checked::after{content:"✓";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px;font-weight:900}
-.btn{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;height:40px;margin:0;border:0;border-radius:8px;font-size:14px;font-weight:700;background:var(--azul);color:#fff;cursor:pointer;font-family:inherit;-webkit-tap-highlight-color:transparent}
+.vacant-checkbox:checked::after{content:"✓";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px;font-weight:900}
+.btn{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;height:36px;margin:0;border:0;border-radius:8px;font-size:13px;font-weight:700;background:var(--azul);color:#fff;cursor:pointer;font-family:inherit;-webkit-tap-highlight-color:transparent}
 .btn:active{background:var(--azul-esc)}
 .btn.red{background:#b42318}
 .btn.claro{background:#e6ecf2;color:var(--azul)}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-top:8px}
 .escondido{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden}
+.edit-banner{display:none;background:#fff4e5;border:1px solid #f5b54a;color:#7a4b00;border-radius:10px;padding:8px 10px;margin-bottom:10px;font-size:12px;font-weight:600}
+.edit-banner .btn{margin-top:6px;height:32px;font-size:12px}
 #photoList{display:grid;gap:10px;margin-top:10px}
-.foto-img{display:block;width:100%;max-height:260px;object-fit:contain;background:#e5e7eb;border-radius:8px 8px 0 0}
-.foto-legenda{background:rgba(0,0,0,.72);color:#fff;font-weight:700;font-size:13px;padding:6px 10px;border-radius:0 0 8px 8px;margin-bottom:6px}
+.foto-img{display:block;width:100%;max-height:220px;object-fit:contain;background:#e5e7eb;border-radius:8px 8px 0 0}
+.foto-legenda{background:rgba(0,0,0,.72);color:#fff;font-weight:700;font-size:12px;padding:5px 10px;border-radius:0 0 8px 8px;margin-bottom:6px}
+.foto-legenda.pronta{background:#1f6f43}
 #cropPanel{display:none;margin-top:10px}
 #cropCanvas{width:100%;border:2px solid var(--azul);border-radius:8px;touch-action:none;background:#222}
 .saved-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:6px 0 10px}
-#recordsFilter{font-size:12px;color:var(--suave)}
-#showAll{width:auto;height:32px;padding:0 14px;font-size:13px}
+#recordsFilter{font-size:11px;color:var(--suave)}
+#showAll{width:auto;height:30px;padding:0 12px;font-size:12px}
 .acoes{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:10px}
-.acoes .btn{height:46px;font-size:20px}
-.record{border-top:1px solid #e5e7eb;padding:10px 0;font-size:13px}
+.acoes .btn{height:40px;font-size:18px}
+.record{border-top:1px solid #e5e7eb;padding:10px 0;font-size:12px}
 .record:first-child{border-top:0}
-.record b.tit{font-size:14px}
-.tag{display:inline-block;background:#e6ecf2;color:var(--azul);padding:3px 7px;border-radius:10px;font-size:11px;font-weight:700;margin:3px 3px 3px 0}
-.record img{width:100%;max-height:240px;object-fit:contain;border-radius:8px;background:#e5e7eb;display:block}
-.record .btn{margin-top:8px;height:36px}
-#import{margin-top:8px;font-size:13px;width:100%}
-footer{text-align:center;padding:8px 12px calc(20px + env(safe-area-inset-bottom,0px));color:var(--suave);font-size:11px;line-height:1.5}
-#appUpdateBtn{margin-top:10px;height:36px;font-size:13px}
+.record b.tit{font-size:13px}
+.tag{display:inline-block;background:#e6ecf2;color:var(--azul);padding:2px 7px;border-radius:10px;font-size:10px;font-weight:700;margin:3px 3px 3px 0}
+.record.editando{background:#fff4e5;border-radius:8px;padding:10px 8px}
+.record .btn{height:32px;font-size:12px}
+.miniaturas{display:flex;gap:6px;margin-top:6px;overflow-x:auto}
+.miniaturas img{width:64px;height:64px;object-fit:cover;border-radius:6px;background:#e5e7eb;flex:0 0 64px;cursor:pointer}
+#import{margin-top:8px;font-size:12px;width:100%}
+footer{text-align:center;padding:8px 12px calc(20px + env(safe-area-inset-bottom,0px));color:var(--suave);font-size:10px;line-height:1.5}
+#appUpdateBtn{margin-top:10px;height:32px;font-size:12px}
+
+/* Visualizador de fotos */
+.viewer{display:none;position:fixed;inset:0;z-index:50;background:#000;flex-direction:column;
+  padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+.viewer.aberto{display:flex}
+.viewer-top{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;color:#fff;font-size:13px;font-weight:700}
+.viewer-top button{width:40px;height:36px;font-size:18px;background:rgba(255,255,255,.15)}
+.viewer-foto{flex:1;display:flex;align-items:center;justify-content:center;min-height:0;padding:0 6px}
+.viewer-foto img{max-width:100%;max-height:100%;object-fit:contain}
+.viewer-nav{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:10px 12px}
+.viewer-nav .btn{background:rgba(255,255,255,.15)}
 </style>
 </head>
 <body>
 <header>Leitura - Imóveis Vagos</header>
 <main>
 
-<section class="card">
+<section class="card" id="formCard">
+  <div id="editBanner" class="edit-banner">
+    ✏️ Editando um registro salvo. Adicione fotos ou corrija os dados e toque em 💾 para atualizar.
+    <button id="cancelEdit" type="button" class="btn claro">Cancelar edição</button>
+  </div>
+
   <h2>Etapa da leitura</h2>
   <div class="help">Selecione uma etapa:</div>
   <select id="stageSelect" class="stage-select" aria-label="Selecione a etapa da leitura">
@@ -106,7 +128,7 @@ footer{text-align:center;padding:8px 12px calc(20px + env(safe-area-inset-bottom
   </div>
 
   <div id="cropPanel">
-    <div style="font-weight:700;font-size:13px;margin-bottom:6px">Arraste na foto para escolher o recorte</div>
+    <div style="font-weight:700;font-size:12px;margin-bottom:6px">Arraste na foto para escolher o recorte</div>
     <canvas id="cropCanvas"></canvas>
     <div class="grid2">
       <button id="applyCrop" type="button" class="btn">Aplicar</button>
@@ -143,13 +165,26 @@ footer{text-align:center;padding:8px 12px calc(20px + env(safe-area-inset-bottom
   <button id="appUpdateBtn" type="button" class="btn">🔄 Atualizar aplicativo</button>
 </footer>
 
+<div id="viewer" class="viewer" aria-hidden="true">
+  <div class="viewer-top">
+    <span id="viewerCount"></span>
+    <button id="viewerClose" type="button" class="btn" aria-label="Fechar">✕</button>
+  </div>
+  <div class="viewer-foto" id="viewerArea"><img id="viewerImg" alt="Foto do registro"></div>
+  <div class="viewer-nav">
+    <button id="viewerPrev" type="button" class="btn">‹ Anterior</button>
+    <button id="viewerShare" type="button" class="btn">📤 Enviar</button>
+    <button id="viewerNext" type="button" class="btn">Próxima ›</button>
+  </div>
+</div>
+
 <script>
 (function(){
 "use strict";
 
 var ETAPAS="app_etapas_v4", REGISTROS="app_registros_v4", NUM_LEITURAS=10;
-var etapaAtual=0, dadosEtapas={}, registros=[], fotosAtuais=[], leiturasAtuais=[""], desocupado=false, mostrarTodos=false;
-var cacheShare=null;
+var etapaAtual=0, dadosEtapas={}, registros=[], fotosAtuais=[], fotosProntas=[], leiturasAtuais=[""], desocupado=false, mostrarTodos=false;
+var cacheShare=null, editandoId=null;
 
 function $(id){return document.getElementById(id);}
 var stageSelect=$("stageSelect"), endereco=$("endereco"), numero=$("numero"), medidor=$("medidor"),
@@ -176,6 +211,11 @@ function gravar(chave,valor){
   try{localStorage.setItem(chave,JSON.stringify(valor));return true;}catch(err){return false;}
 }
 function cheio(v){return String(v||"").trim()!=="";}
+function acharRegistro(id){
+  for(var i=0;i<registros.length;i++){ if(String(registros[i].id)===String(id)) return i; }
+  return -1;
+}
+function fotosDoRegistro(r){ return (r.fotos&&r.fotos.length)?r.fotos:(r.foto?[r.foto]:[]); }
 
 /* Texto que vai na foto: "Rua 11, nº 15" */
 function textoEndereco(){
@@ -184,18 +224,18 @@ function textoEndereco(){
   return t;
 }
 
+/* Rascunho por etapa (não mexe durante a edição de um registro) */
 function guardarEtapaAtual(){
-  if(!etapaAtual)return;
+  if(!etapaAtual || editandoId)return;
   dadosEtapas[String(etapaAtual)]={
     endereco:endereco.value, numero:numero.value, medidor:medidor.value,
     leituras:leiturasAtuais.slice(), leitura:leiturasAtuais[0]||"",
     data:data.value, desocupado:desocupado,
-    fotos:fotosAtuais.slice(), foto:fotosAtuais[0]||null
+    fotos:fotosAtuais.slice(), fotosProntas:fotosProntas.slice(), foto:fotosAtuais[0]||null
   };
   if(!gravar(ETAPAS,dadosEtapas)){
-    /* Sem espaço para o rascunho com fotos: guarda só os textos */
     var copia=JSON.parse(JSON.stringify(dadosEtapas));
-    Object.keys(copia).forEach(function(k){copia[k].fotos=[];copia[k].foto=null;});
+    Object.keys(copia).forEach(function(k){copia[k].fotos=[];copia[k].fotosProntas=[];copia[k].foto=null;});
     gravar(ETAPAS,copia);
   }
 }
@@ -224,7 +264,7 @@ readingsList.addEventListener("input",function(ev){
 /* FOTOS */
 function atualizarLegendas(){
   var t=textoEndereco()||"Digite endereço e número para sair na foto";
-  photoList.querySelectorAll(".foto-legenda").forEach(function(el){el.textContent="📍 "+t;});
+  photoList.querySelectorAll(".foto-legenda:not(.pronta)").forEach(function(el){el.textContent="📍 "+t;});
   cacheShare=null;
 }
 function renderFotos(){
@@ -235,11 +275,15 @@ function renderFotos(){
     var box=document.createElement("div");
     var img=document.createElement("img");
     img.className="foto-img"; img.src=src; img.alt="Foto do medidor "+(i+1);
-    var leg=document.createElement("div"); leg.className="foto-legenda";
+    img.addEventListener("click",function(){abrirViewer(fotosAtuais,i);});
+    var leg=document.createElement("div");
+    leg.className="foto-legenda"+(fotosProntas[i]?" pronta":"");
+    if(fotosProntas[i]) leg.textContent="✅ Foto já salva com o endereço";
     var del=document.createElement("button");
     del.type="button"; del.className="btn red"; del.textContent="🗑️ Excluir foto "+(i+1);
     del.addEventListener("click",function(){
-      fotosAtuais.splice(i,1); renderFotos(); guardarEtapaAtual();
+      if(!confirm("Excluir a foto "+(i+1)+"?"))return;
+      fotosAtuais.splice(i,1); fotosProntas.splice(i,1); renderFotos(); guardarEtapaAtual();
     });
     box.appendChild(img); box.appendChild(leg); box.appendChild(del);
     photoList.appendChild(box);
@@ -247,7 +291,6 @@ function renderFotos(){
   atualizarLegendas();
 }
 
-/* Reduz a foto para não lotar a memória do celular */
 function reduzirImagem(src,max,cb){
   var img=new Image();
   img.onload=function(){
@@ -272,7 +315,8 @@ function lerFotos(input){
     var url=URL.createObjectURL(arquivos[i]);
     reduzirImagem(url,1600,function(res){
       URL.revokeObjectURL(url);
-      if(res)fotosAtuais.push(res); else alert("Não foi possível abrir uma das fotos.");
+      if(res){fotosAtuais.push(res);fotosProntas.push(false);}
+      else alert("Não foi possível abrir uma das fotos.");
       i++; proxima();
     });
   })();
@@ -280,7 +324,7 @@ function lerFotos(input){
 cameraInput.addEventListener("change",function(){lerFotos(cameraInput);});
 galleryInput.addEventListener("change",function(){lerFotos(galleryInput);});
 
-/* Escreve o endereço na parte de baixo da foto */
+/* Escreve o endereço na parte de baixo da foto (letra menor) */
 function quebrarTexto(ctx,texto,maxW){
   var palavras=texto.split(" "), linhas=[], atual="";
   palavras.forEach(function(p){
@@ -299,11 +343,11 @@ function carimbar(src,texto,cb){
     c.width=img.width; c.height=img.height;
     var ctx=c.getContext("2d");
     ctx.drawImage(img,0,0);
-    var fs=Math.max(20,Math.round(c.width/18)), pad=Math.round(fs*.55);
+    var fs=Math.max(14,Math.round(Math.min(c.width,c.height)/24)), pad=Math.round(fs*.5);
     ctx.font="bold "+fs+"px Arial";
     var linhas=quebrarTexto(ctx,texto,c.width-pad*2);
-    var lh=Math.round(fs*1.25), h=linhas.length*lh+pad*2;
-    ctx.fillStyle="rgba(0,0,0,.68)";
+    var lh=Math.round(fs*1.2), h=linhas.length*lh+pad*2;
+    ctx.fillStyle="rgba(0,0,0,.6)";
     ctx.fillRect(0,c.height-h,c.width,h);
     ctx.fillStyle="#fff"; ctx.textBaseline="top";
     linhas.forEach(function(l,i){ctx.fillText(l,pad,c.height-h+pad+i*lh+Math.round((lh-fs)/2));});
@@ -312,10 +356,12 @@ function carimbar(src,texto,cb){
   img.onerror=function(){cb(src);};
   img.src=src;
 }
-function carimbarTodas(lista,texto,cb){
+/* Só carimba as fotos que ainda não têm o endereço */
+function carimbarTodas(lista,prontas,texto,cb){
   var saida=[],i=0;
   (function prox(){
     if(i>=lista.length){cb(saida);return;}
+    if(prontas[i]){saida.push(lista[i]);i++;prox();return;}
     carimbar(lista[i],texto,function(r){saida.push(r);i++;prox();});
   })();
 }
@@ -329,8 +375,11 @@ function baixar(blob,nome){
   a.href=u; a.download=nome; document.body.appendChild(a); a.click(); a.remove();
   setTimeout(function(){URL.revokeObjectURL(u);},1500);
 }
+function nomeBase(texto){
+  return texto.replace(/[^\wÀ-ú]+/g,"-").replace(/^-|-$/g,"")||"medidor";
+}
 
-/* COMPARTILHAR FOTOS (já com o endereço escrito) */
+/* COMPARTILHAR FOTOS */
 function enviar(pacote){
   if(navigator.share){
     var pode=true;
@@ -353,8 +402,8 @@ function compartilharFotos(){
   if(!fotosAtuais.length){alert("Não há foto para compartilhar.");return;}
   if(cacheShare){enviar(cacheShare);return;}
   var texto=textoEndereco()||("Etapa "+etapaAtual);
-  carimbarTodas(fotosAtuais,texto,function(prontas){
-    var base=(texto.replace(/[^\wÀ-ú]+/g,"-").replace(/^-|-$/g,"")||"medidor");
+  carimbarTodas(fotosAtuais,fotosProntas,texto,function(prontas){
+    var base=nomeBase(texto);
     var arquivos=prontas.map(function(d,i){
       return new File([dataUrlParaBlob(d)],base+(prontas.length>1?"-"+(i+1):"")+".jpg",{type:"image/jpeg"});
     });
@@ -416,7 +465,9 @@ $("applyCrop").addEventListener("click",function(){
   var c=document.createElement("canvas");
   c.width=Math.max(1,Math.round(r.w*sx)); c.height=Math.max(1,Math.round(r.h*sy));
   c.getContext("2d").drawImage(cropImg,r.x*sx,r.y*sy,r.w*sx,r.h*sy,0,0,c.width,c.height);
-  fotosAtuais[fotosAtuais.length-1]=c.toDataURL("image/jpeg",.9);
+  var ult=fotosAtuais.length-1;
+  fotosAtuais[ult]=c.toDataURL("image/jpeg",.9);
+  fotosProntas[ult]=false;
   cropPanel.style.display="none";
   renderFotos(); guardarEtapaAtual();
 });
@@ -425,16 +476,20 @@ $("cancelCrop").addEventListener("click",function(){cropPanel.style.display="non
 /* ETAPA E CAMPOS */
 function carregarEtapa(n){
   etapaAtual=n;
+  stageSelect.value=n?String(n):"";
   var d=dadosEtapas[String(n)]||{};
   endereco.value=d.endereco||""; numero.value=d.numero||""; medidor.value=d.medidor||"";
   leiturasAtuais=Array.isArray(d.leituras)?d.leituras.slice():(d.leitura?[d.leitura]:[""]);
   data.value=d.data||hoje();
   desocupado=d.desocupado===true; vacant.checked=desocupado;
   fotosAtuais=Array.isArray(d.fotos)?d.fotos.slice():(d.foto?[d.foto]:[]);
+  fotosProntas=Array.isArray(d.fotosProntas)&&d.fotosProntas.length===fotosAtuais.length?
+    d.fotosProntas.slice():fotosAtuais.map(function(){return false;});
   preencherLeituras(); renderFotos();
 }
 stageSelect.addEventListener("change",function(){
   var n=Number(this.value); if(!n)return;
+  if(editandoId){ etapaAtual=n; render(); return; } /* na edição, só muda a etapa do registro */
   guardarEtapaAtual(); carregarEtapa(n);
   mostrarTodos=false; render();
 });
@@ -447,7 +502,39 @@ vacant.addEventListener("change",function(){
 medidor.addEventListener("input",guardarEtapaAtual);
 data.addEventListener("change",guardarEtapaAtual);
 
-/* SALVAR (as fotos ficam gravadas com o endereço escrito) */
+/* EDITAR REGISTRO SALVO */
+function iniciarEdicao(id){
+  var idx=acharRegistro(id); if(idx<0)return;
+  var r=registros[idx];
+  guardarEtapaAtual();
+  editandoId=r.id;
+  etapaAtual=Number(r.etapa);
+  stageSelect.value=String(r.etapa);
+  endereco.value=r.endereco||""; numero.value=r.numero||""; medidor.value=r.medidor||"";
+  leiturasAtuais=(r.leituras&&r.leituras.length)?r.leituras.slice():(r.leitura?String(r.leitura).split(" / "):[""]);
+  data.value=r.data||hoje();
+  desocupado=r.desocupado===true; vacant.checked=desocupado;
+  fotosAtuais=fotosDoRegistro(r).slice();
+  fotosProntas=fotosAtuais.map(function(){return true;});
+  cropPanel.style.display="none";
+  preencherLeituras(); renderFotos();
+  $("editBanner").style.display="block";
+  mostrarTodos=false; render();
+  $("formCard").scrollIntoView({behavior:"smooth",block:"start"});
+}
+function sairEdicao(){
+  editandoId=null;
+  $("editBanner").style.display="none";
+  cropPanel.style.display="none";
+  carregarEtapa(etapaAtual); /* volta o rascunho da etapa */
+  render();
+}
+$("cancelEdit").addEventListener("click",function(){
+  if(!confirm("Cancelar a edição? As mudanças não salvas serão perdidas."))return;
+  sairEdicao();
+});
+
+/* SALVAR */
 $("save").addEventListener("click",function(){
   if(!etapaAtual){alert("Selecione uma etapa de 1 a 18.");return;}
   if(!endereco.value.trim()){alert("Digite o endereço.");return;}
@@ -455,13 +542,26 @@ $("save").addEventListener("click",function(){
   var leit=leiturasAtuais.filter(cheio);
   if(!desocupado && !leit.length){alert("Digite pelo menos uma leitura ou marque imóvel desocupado.");return;}
   guardarEtapaAtual();
-  carimbarTodas(fotosAtuais,textoEndereco(),function(fotos){
-    registros.unshift({
-      id:Date.now(), etapa:etapaAtual, data:data.value,
+  carimbarTodas(fotosAtuais,fotosProntas,textoEndereco(),function(fotos){
+    var novo={
+      id:editandoId||Date.now(), etapa:etapaAtual, data:data.value,
       endereco:endereco.value.trim(), numero:numero.value.trim(), medidor:medidor.value.trim(),
       leituras:desocupado?[]:leit, leitura:desocupado?"":leit.join(" / "),
       desocupado:desocupado, fotos:fotos, foto:fotos[0]||null
-    });
+    };
+    if(editandoId){
+      var idx=acharRegistro(editandoId), antigo=idx>=0?registros[idx]:null;
+      if(idx>=0) registros[idx]=novo; else registros.unshift(novo);
+      if(!gravar(REGISTROS,registros)){
+        if(idx>=0) registros[idx]=antigo; else registros.shift();
+        alert("Memória do app cheia. Exporte o backup e exclua registros antigos para salvar mais.");
+        return;
+      }
+      sairEdicao();
+      alert("Registro atualizado.");
+      return;
+    }
+    registros.unshift(novo);
     if(!gravar(REGISTROS,registros)){
       registros.shift();
       alert("Memória do app cheia. Exporte o backup e exclua registros antigos para salvar mais.");
@@ -474,8 +574,12 @@ $("save").addEventListener("click",function(){
 
 /* LIMPAR */
 $("clear").addEventListener("click",function(){
+  if(editandoId){
+    if(confirm("Cancelar a edição? As mudanças não salvas serão perdidas.")) sairEdicao();
+    return;
+  }
   if(!confirm("Limpar o formulário de todas as etapas? Os registros salvos continuam."))return;
-  etapaAtual=0; dadosEtapas={}; fotosAtuais=[]; leiturasAtuais=[""]; desocupado=false;
+  etapaAtual=0; dadosEtapas={}; fotosAtuais=[]; fotosProntas=[]; leiturasAtuais=[""]; desocupado=false;
   try{localStorage.removeItem(ETAPAS);}catch(err){}
   stageSelect.value=""; endereco.value=""; numero.value=""; medidor.value="";
   data.value=hoje(); vacant.checked=false;
@@ -497,37 +601,87 @@ function render(){
   $("showAll").style.visibility=etapaAtual?"visible":"hidden";
 
   if(!lista.length){
-    records.innerHTML='<span style="font-size:12px;color:#667085">'+
+    records.innerHTML='<span style="font-size:11px;color:#667085">'+
       (todos?"Nenhum registro salvo.":"Nenhum registro salvo nesta etapa.")+'</span>';
     return;
   }
   records.innerHTML="";
   lista.forEach(function(r){
-    var fotos=(r.fotos&&r.fotos.length)?r.fotos:(r.foto?[r.foto]:[]);
+    var fotos=fotosDoRegistro(r);
     var leit=(r.leituras&&r.leituras.length)?r.leituras.join(" / "):r.leitura;
     var div=document.createElement("div");
-    div.className="record";
+    div.className="record"+(String(r.id)===String(editandoId)?" editando":"");
     div.innerHTML=
       '<b class="tit">'+esc(r.endereco)+(r.numero?", nº "+esc(r.numero):"")+'</b><br>'+
       '<span class="tag">Etapa '+esc(r.etapa)+'</span>'+
       '<span class="tag">'+(r.data?esc(r.data.split("-").reverse().join("/")):"")+'</span>'+
+      '<span class="tag">'+fotos.length+' foto'+(fotos.length===1?"":"s")+'</span>'+
+      (String(r.id)===String(editandoId)?'<span class="tag" style="background:#f5b54a;color:#5a3700">Editando</span>':'')+
       '<div>Medidor: <b>'+esc(r.medidor)+'</b></div>'+
       (r.desocupado?'<div><b>Imóvel desocupado</b></div>':
         '<div>Leitura'+((r.leituras&&r.leituras.length>1)?"s":"")+': <b>'+esc(leit)+'</b></div>')+
-      (fotos.length?'<div style="display:grid;gap:8px;margin-top:8px">'+
-        fotos.map(function(f,i){return '<img src="'+f+'" alt="Foto '+(i+1)+'">';}).join("")+'</div>':"")+
-      '<button type="button" class="btn red" data-del="'+r.id+'">Excluir</button>';
+      (fotos.length?'<div class="miniaturas">'+
+        fotos.map(function(f,i){return '<img src="'+f+'" alt="Foto '+(i+1)+'" data-ver="'+r.id+'" data-i="'+i+'">';}).join("")+'</div>':"")+
+      '<div class="grid3">'+
+        '<button type="button" class="btn claro" data-ver="'+r.id+'" data-i="0"'+(fotos.length?'':' disabled style="opacity:.4"')+'>🖼️ Ver fotos</button>'+
+        '<button type="button" class="btn" data-edit="'+r.id+'">✏️ Editar</button>'+
+        '<button type="button" class="btn red" data-del="'+r.id+'">🗑️ Excluir</button>'+
+      '</div>';
     records.appendChild(div);
   });
-  records.querySelectorAll("[data-del]").forEach(function(btn){
-    btn.addEventListener("click",function(){
-      if(!confirm("Excluir este registro?"))return;
-      registros=registros.filter(function(r){return String(r.id)!==String(btn.dataset.del);});
-      gravar(REGISTROS,registros); render();
-    });
-  });
 }
+records.addEventListener("click",function(ev){
+  var alvo=ev.target.closest("[data-ver],[data-edit],[data-del]"); if(!alvo)return;
+  if(alvo.dataset.ver){
+    var idx=acharRegistro(alvo.dataset.ver); if(idx<0)return;
+    var fotos=fotosDoRegistro(registros[idx]);
+    if(fotos.length) abrirViewer(fotos,Number(alvo.dataset.i)||0,registros[idx]);
+  }else if(alvo.dataset.edit){
+    iniciarEdicao(alvo.dataset.edit);
+  }else if(alvo.dataset.del){
+    if(!confirm("Excluir este registro?"))return;
+    var id=alvo.dataset.del;
+    if(String(id)===String(editandoId)){ editandoId=null; $("editBanner").style.display="none"; carregarEtapa(etapaAtual); }
+    registros=registros.filter(function(r){return String(r.id)!==String(id);});
+    gravar(REGISTROS,registros); render();
+  }
+});
 $("showAll").addEventListener("click",function(){mostrarTodos=!mostrarTodos;render();});
+
+/* VISUALIZADOR DE FOTOS (tela cheia) */
+var vFotos=[], vIdx=0, vReg=null, toqueX=null;
+var viewer=$("viewer"), viewerImg=$("viewerImg");
+function mostrarFotoViewer(){
+  viewerImg.src=vFotos[vIdx];
+  $("viewerCount").textContent="Foto "+(vIdx+1)+" de "+vFotos.length;
+  $("viewerPrev").style.visibility=vFotos.length>1?"visible":"hidden";
+  $("viewerNext").style.visibility=vFotos.length>1?"visible":"hidden";
+}
+function abrirViewer(lista,i,reg){
+  vFotos=lista.slice(); vIdx=Math.max(0,Math.min(i,vFotos.length-1)); vReg=reg||null;
+  mostrarFotoViewer();
+  viewer.classList.add("aberto"); viewer.setAttribute("aria-hidden","false");
+  document.body.style.overflow="hidden";
+}
+function fecharViewer(){
+  viewer.classList.remove("aberto"); viewer.setAttribute("aria-hidden","true");
+  document.body.style.overflow="";
+}
+function passar(d){ if(vFotos.length<2)return; vIdx=(vIdx+d+vFotos.length)%vFotos.length; mostrarFotoViewer(); }
+$("viewerClose").addEventListener("click",fecharViewer);
+$("viewerPrev").addEventListener("click",function(){passar(-1);});
+$("viewerNext").addEventListener("click",function(){passar(1);});
+$("viewerArea").addEventListener("touchstart",function(ev){toqueX=ev.touches[0].clientX;},{passive:true});
+$("viewerArea").addEventListener("touchend",function(ev){
+  if(toqueX===null)return;
+  var dx=ev.changedTouches[0].clientX-toqueX; toqueX=null;
+  if(Math.abs(dx)>50) passar(dx<0?1:-1);
+});
+$("viewerShare").addEventListener("click",function(){
+  var texto=vReg?(vReg.endereco+(vReg.numero?", nº "+vReg.numero:"")):(textoEndereco()||"medidor");
+  var arq=new File([dataUrlParaBlob(vFotos[vIdx])],nomeBase(texto)+"-"+(vIdx+1)+".jpg",{type:"image/jpeg"});
+  enviar({titulo:"Medidor - "+texto,texto:texto,arquivos:[arq]});
+});
 
 /* BACKUP */
 $("export").addEventListener("click",function(){
