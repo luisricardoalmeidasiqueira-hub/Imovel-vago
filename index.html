@@ -217,6 +217,92 @@ function acharRegistro(id){
 }
 function fotosDoRegistro(r){ return (r.fotos&&r.fotos.length)?r.fotos:(r.foto?[r.foto]:[]); }
 
+/* BANCO DE FOTOS (IndexedDB): as fotos ficam aqui; nos registros fica só o código (id) */
+var db=null, cacheFotos={}, seqFoto=0;
+function abrirBanco(cb){
+  if(!window.indexedDB){cb(false);return;}
+  var req;
+  try{req=indexedDB.open("leitura_fotos",1);}catch(err){cb(false);return;}
+  req.onupgradeneeded=function(){
+    if(!req.result.objectStoreNames.contains("fotos")) req.result.createObjectStore("fotos",{keyPath:"id"});
+  };
+  req.onsuccess=function(){db=req.result;cb(true);};
+  req.onerror=function(){cb(false);};
+}
+function lerTodasFotos(cb){
+  if(!db){cb();return;}
+  try{
+    var tx=db.transaction("fotos","readonly"), rq=tx.objectStore("fotos").openCursor();
+    rq.onsuccess=function(){var c=rq.result; if(c){cacheFotos[c.value.id]=c.value.data;c.continue();}};
+    tx.oncomplete=function(){cb();};
+    tx.onerror=tx.onabort=function(){cb();};
+  }catch(err){cb();}
+}
+function ehDataUrl(s){return typeof s==="string" && s.indexOf("data:")===0;}
+function srcFoto(id){return cacheFotos[id]||(ehDataUrl(id)?id:"");}
+function novoIdFoto(){return "f"+Date.now().toString(36)+(seqFoto++).toString(36)+Math.random().toString(36).slice(2,6);}
+function salvarFotoDB(id,data,cb){
+  cacheFotos[id]=data;
+  var feito=false;
+  function fim(ok){if(feito)return;feito=true;cb(ok);}
+  try{
+    var tx=db.transaction("fotos","readwrite");
+    tx.objectStore("fotos").put({id:id,data:data});
+    tx.oncomplete=function(){fim(true);};
+    tx.onerror=tx.onabort=function(){fim(false);};
+  }catch(err){fim(false);}
+}
+function apagarFotoDB(id){
+  delete cacheFotos[id];
+  if(!db)return;
+  try{db.transaction("fotos","readwrite").objectStore("fotos").delete(id);}catch(err){}
+}
+/* Recebe fotos (imagem grande ou id) e devolve só ids. Sem banco, mantém o modo antigo. */
+function guardarFotos(lista,cb){
+  if(!db){cb(lista.slice(),true);return;}
+  var ids=[], pend=0, falhou=false, fim=false;
+  function fechar(){ if(pend===0 && fim) cb(ids,!falhou); }
+  lista.forEach(function(s){
+    if(ehDataUrl(s)){
+      var id=novoIdFoto(); ids.push(id); pend++;
+      salvarFotoDB(id,s,function(ok){ if(!ok)falhou=true; pend--; fechar(); });
+    }else ids.push(s);
+  });
+  fim=true; fechar();
+}
+/* Apaga do banco as fotos que nenhum registro, rascunho ou formulário usa mais */
+function limparOrfas(){
+  if(!db)return;
+  var usados={};
+  function marca(l){(l||[]).forEach(function(i){usados[i]=1;});}
+  registros.forEach(function(r){marca(fotosDoRegistro(r));});
+  Object.keys(dadosEtapas).forEach(function(k){marca(dadosEtapas[k].fotos);});
+  marca(fotosAtuais);
+  Object.keys(cacheFotos).forEach(function(id){if(!usados[id])apagarFotoDB(id);});
+}
+/* Passa as fotos antigas (dentro do localStorage) para o banco, uma vez só */
+function migrarFotos(cb){
+  if(!db){cb();return;}
+  var itens=[];
+  registros.forEach(function(r){var l=fotosDoRegistro(r); if(l.some(ehDataUrl))itens.push({obj:r,lista:l});});
+  Object.keys(dadosEtapas).forEach(function(k){
+    var d=dadosEtapas[k], l=Array.isArray(d.fotos)?d.fotos:(d.foto?[d.foto]:[]);
+    if(l.some(ehDataUrl))itens.push({obj:d,lista:l});
+  });
+  var i=0, mudou=false;
+  (function prox(){
+    if(i>=itens.length){
+      if(mudou){gravar(REGISTROS,registros);gravar(ETAPAS,dadosEtapas);}
+      cb();return;
+    }
+    var it=itens[i++];
+    guardarFotos(it.lista,function(ids,ok){
+      if(ok){it.obj.fotos=ids;it.obj.foto=ids[0]||null;mudou=true;}
+      prox();
+    });
+  })();
+}
+
 /* Texto que vai na foto: "Rua 11, nº 15" */
 function textoEndereco(){
   var t=endereco.value.trim(), n=numero.value.trim();
@@ -285,7 +371,7 @@ function renderFotos(){
   fotosAtuais.forEach(function(src,i){
     var box=document.createElement("div");
     var img=document.createElement("img");
-    img.className="foto-img"; img.src=src; img.alt="Foto do medidor "+(i+1);
+    img.className="foto-img"; img.src=srcFoto(src); img.alt="Foto do medidor "+(i+1);
     img.addEventListener("click",function(){abrirViewer(fotosAtuais,i);});
     var leg=document.createElement("div");
     leg.className="foto-legenda"+(fotosProntas[i]?" pronta":"");
@@ -309,7 +395,7 @@ function reduzirImagem(src,max,cb){
     var c=document.createElement("canvas");
     c.width=Math.max(1,Math.round(img.width*s)); c.height=Math.max(1,Math.round(img.height*s));
     c.getContext("2d").drawImage(img,0,0,c.width,c.height);
-    cb(c.toDataURL("image/jpeg",.85));
+    cb(c.toDataURL("image/jpeg",.6));
   };
   img.onerror=function(){cb(null);};
   img.src=src;
@@ -324,11 +410,18 @@ function lerFotos(input){
   (function proxima(){
     if(i>=arquivos.length){renderFotos();guardarEtapaAtual();return;}
     var url=URL.createObjectURL(arquivos[i]);
-    reduzirImagem(url,1600,function(res){
+    reduzirImagem(url,1000,function(res){
       URL.revokeObjectURL(url);
-      if(res){fotosAtuais.push(res);fotosProntas.push(false);}
-      else alert("Não foi possível abrir uma das fotos.");
-      i++; proxima();
+      if(res){
+        guardarFotos([res],function(ids,ok){
+          if(ok){fotosAtuais.push(ids[0]);fotosProntas.push(false);}
+          else alert("Sem espaço para guardar a foto no aparelho.");
+          i++; proxima();
+        });
+      }else{
+        alert("Não foi possível abrir uma das fotos.");
+        i++; proxima();
+      }
     });
   })();
 }
@@ -362,7 +455,7 @@ function carimbar(src,texto,cb){
     ctx.fillRect(0,c.height-h,c.width,h);
     ctx.fillStyle="#fff"; ctx.textBaseline="top";
     linhas.forEach(function(l,i){ctx.fillText(l,pad,c.height-h+pad+i*lh+Math.round((lh-fs)/2));});
-    cb(c.toDataURL("image/jpeg",.88));
+    cb(c.toDataURL("image/jpeg",.65));
   };
   img.onerror=function(){cb(src);};
   img.src=src;
@@ -373,7 +466,7 @@ function carimbarTodas(lista,prontas,texto,cb){
   (function prox(){
     if(i>=lista.length){cb(saida);return;}
     if(prontas[i]){saida.push(lista[i]);i++;prox();return;}
-    carimbar(lista[i],texto,function(r){saida.push(r);i++;prox();});
+    carimbar(srcFoto(lista[i]),texto,function(r){saida.push(r);i++;prox();});
   })();
 }
 function dataUrlParaBlob(d){
@@ -416,7 +509,7 @@ function compartilharFotos(){
   carimbarTodas(fotosAtuais,fotosProntas,texto,function(prontas){
     var base=nomeBase(texto);
     var arquivos=prontas.map(function(d,i){
-      return new File([dataUrlParaBlob(d)],base+(prontas.length>1?"-"+(i+1):"")+".jpg",{type:"image/jpeg"});
+      return new File([dataUrlParaBlob(srcFoto(d))],base+(prontas.length>1?"-"+(i+1):"")+".jpg",{type:"image/jpeg"});
     });
     enviar({titulo:"Medidor - "+texto,texto:texto,arquivos:arquivos});
   });
@@ -436,7 +529,7 @@ $("cropBtn").addEventListener("click",function(){
     cx=cy=cw=ch=0; desenharRecorte();
     cropPanel.style.display="block";
   };
-  cropImg.src=fotosAtuais[fotosAtuais.length-1];
+  cropImg.src=srcFoto(fotosAtuais[fotosAtuais.length-1]);
 });
 function ponto(ev){
   var r=cropCanvas.getBoundingClientRect(), t=ev.touches?ev.touches[0]:ev;
@@ -477,10 +570,13 @@ $("applyCrop").addEventListener("click",function(){
   c.width=Math.max(1,Math.round(r.w*sx)); c.height=Math.max(1,Math.round(r.h*sy));
   c.getContext("2d").drawImage(cropImg,r.x*sx,r.y*sy,r.w*sx,r.h*sy,0,0,c.width,c.height);
   var ult=fotosAtuais.length-1;
-  fotosAtuais[ult]=c.toDataURL("image/jpeg",.9);
-  fotosProntas[ult]=false;
-  cropPanel.style.display="none";
-  renderFotos(); guardarEtapaAtual();
+  guardarFotos([c.toDataURL("image/jpeg",.65)],function(ids,ok){
+    if(!ok){alert("Sem espaço para guardar a foto no aparelho.");return;}
+    fotosAtuais[ult]=ids[0];
+    fotosProntas[ult]=false;
+    cropPanel.style.display="none";
+    renderFotos(); guardarEtapaAtual();
+  });
 });
 $("cancelCrop").addEventListener("click",function(){cropPanel.style.display="none";});
 
@@ -555,7 +651,9 @@ $("save").addEventListener("click",function(){
   var leit=leiturasAtuais.filter(cheio);
   if(!desocupado && !leit.length){alert("Digite pelo menos uma leitura ou marque imóvel desocupado.");return;}
   guardarEtapaAtual();
-  carimbarTodas(fotosAtuais,fotosProntas,textoEndereco(),function(fotos){
+  carimbarTodas(fotosAtuais,fotosProntas,textoEndereco(),function(carimbadas){
+   guardarFotos(carimbadas,function(fotos,okFotos){
+    if(!okFotos){alert("Sem espaço para guardar as fotos no aparelho.");return;}
     var novo={
       id:editandoId||Date.now(), etapa:etapaAtual, data:data.value,
       endereco:endereco.value.trim(), numero:numero.value.trim(), medidor:medidor.value.trim(),
@@ -571,6 +669,7 @@ $("save").addEventListener("click",function(){
         return;
       }
       sairEdicao();
+      limparOrfas();
       alert("Registro atualizado.");
       return;
     }
@@ -585,7 +684,9 @@ $("save").addEventListener("click",function(){
     gravarRascunhos();
     carregarEtapa(etapaAtual);
     render();
+    limparOrfas();
     alert("Registro salvo.");
+   });
   });
 });
 
@@ -601,7 +702,7 @@ $("clear").addEventListener("click",function(){
   stageSelect.value=""; endereco.value=""; numero.value=""; medidor.value="";
   data.value=hoje(); vacant.checked=false;
   cropPanel.style.display="none";
-  preencherLeituras(); renderFotos(); render();
+  preencherLeituras(); renderFotos(); render(); limparOrfas();
 });
 
 /* REGISTROS */
@@ -638,7 +739,7 @@ function render(){
       (r.desocupado?'<div><b>Imóvel desocupado</b></div>':
         '<div>Leitura'+((r.leituras&&r.leituras.length>1)?"s":"")+': <b>'+esc(leit)+'</b></div>')+
       (fotos.length?'<div class="miniaturas">'+
-        fotos.map(function(f,i){return '<img src="'+f+'" alt="Foto '+(i+1)+'" data-ver="'+r.id+'" data-i="'+i+'">';}).join("")+'</div>':"")+
+        fotos.map(function(f,i){return '<img src="'+srcFoto(f)+'" alt="Foto '+(i+1)+'" data-ver="'+r.id+'" data-i="'+i+'">';}).join("")+'</div>':"")+
       '<div class="grid3">'+
         '<button type="button" class="btn claro" data-ver="'+r.id+'" data-i="0"'+(fotos.length?'':' disabled style="opacity:.4"')+'>🖼️ Ver fotos</button>'+
         '<button type="button" class="btn" data-edit="'+r.id+'">✏️ Editar</button>'+
@@ -660,7 +761,7 @@ records.addEventListener("click",function(ev){
     var id=alvo.dataset.del;
     if(String(id)===String(editandoId)){ editandoId=null; $("editBanner").style.display="none"; carregarEtapa(etapaAtual); }
     registros=registros.filter(function(r){return String(r.id)!==String(id);});
-    gravar(REGISTROS,registros); render();
+    gravar(REGISTROS,registros); limparOrfas(); render();
   }
 });
 $("showAll").addEventListener("click",function(){mostrarTodos=!mostrarTodos;render();});
@@ -669,7 +770,7 @@ $("showAll").addEventListener("click",function(){mostrarTodos=!mostrarTodos;rend
 var vFotos=[], vIdx=0, vReg=null, toqueX=null;
 var viewer=$("viewer"), viewerImg=$("viewerImg");
 function mostrarFotoViewer(){
-  viewerImg.src=vFotos[vIdx];
+  viewerImg.src=srcFoto(vFotos[vIdx]);
   $("viewerCount").textContent="Foto "+(vIdx+1)+" de "+vFotos.length;
   $("viewerPrev").style.visibility=vFotos.length>1?"visible":"hidden";
   $("viewerNext").style.visibility=vFotos.length>1?"visible":"hidden";
@@ -696,13 +797,21 @@ $("viewerArea").addEventListener("touchend",function(ev){
 });
 $("viewerShare").addEventListener("click",function(){
   var texto=vReg?(vReg.endereco+(vReg.numero?", nº "+vReg.numero:"")):(textoEndereco()||"medidor");
-  var arq=new File([dataUrlParaBlob(vFotos[vIdx])],nomeBase(texto)+"-"+(vIdx+1)+".jpg",{type:"image/jpeg"});
+  var arq=new File([dataUrlParaBlob(srcFoto(vFotos[vIdx]))],nomeBase(texto)+"-"+(vIdx+1)+".jpg",{type:"image/jpeg"});
   enviar({titulo:"Medidor - "+texto,texto:texto,arquivos:[arq]});
 });
 
 /* BACKUP */
 $("export").addEventListener("click",function(){
-  var blob=new Blob([JSON.stringify({registros:registros,etapas:dadosEtapas})],{type:"application/json"});
+  function urls(l){return (l||[]).map(srcFoto);}
+  var regs=registros.map(function(r){
+    var c=JSON.parse(JSON.stringify(r)); c.fotos=urls(fotosDoRegistro(r)); c.foto=c.fotos[0]||null; return c;
+  });
+  var et={};
+  Object.keys(dadosEtapas).forEach(function(k){
+    var c=JSON.parse(JSON.stringify(dadosEtapas[k])); c.fotos=urls(c.fotos); c.foto=c.fotos[0]||null; et[k]=c;
+  });
+  var blob=new Blob([JSON.stringify({registros:regs,etapas:et})],{type:"application/json"});
   baixar(blob,"backup-imoveis-vagos.json");
 });
 $("import").addEventListener("change",function(ev){
@@ -712,8 +821,10 @@ $("import").addEventListener("change",function(ev){
     try{
       var x=JSON.parse(leitor.result);
       registros=x.registros||[]; dadosEtapas=x.etapas||{};
-      gravar(REGISTROS,registros); gravar(ETAPAS,dadosEtapas);
-      render(); alert("Backup importado.");
+      migrarFotos(function(){
+        gravar(REGISTROS,registros); gravar(ETAPAS,dadosEtapas);
+        limparOrfas(); render(); alert("Backup importado.");
+      });
     }catch(err){alert("Backup inválido.");}
     ev.target.value="";
   };
@@ -748,7 +859,16 @@ try{dadosEtapas=JSON.parse(localStorage.getItem(ETAPAS)||"{}");}catch(err){dados
 limparRascunhosAntigos();
 data.value=hoje();
 preencherLeituras();
-render();
+if(navigator.storage&&navigator.storage.persist){try{navigator.storage.persist();}catch(err){}}
+abrirBanco(function(ok){
+  if(!ok) alert("Este aparelho não liberou o armazenamento grande de fotos. O app vai funcionar no modo antigo.");
+  lerTodasFotos(function(){
+    migrarFotos(function(){
+      limparOrfas();
+      render();
+    });
+  });
+});
 
 })();
 </script>
