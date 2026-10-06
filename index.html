@@ -62,6 +62,8 @@ input:disabled{opacity:.45}
 .thumbs{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
 .thumbs img{width:72px;height:72px;object-fit:cover;border-radius:8px;background:#e5e7eb}
 #import{margin-top:8px;font-size:13px;width:100%}
+#diag{font-size:11px;color:#b42318;margin-top:6px;word-break:break-all}
+.sem-foto{width:72px;height:72px;border-radius:8px;background:#fde8e6;color:#b42318;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;text-align:center;padding:4px}
 #espaco{font-size:11px;color:var(--suave);margin-top:8px}
 footer{text-align:center;padding:8px 12px calc(20px + env(safe-area-inset-bottom,0px));color:var(--suave);font-size:11px;line-height:1.5}
 #modal{display:none;position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.85);overflow:auto;padding:calc(14px + env(safe-area-inset-top,0px)) 12px calc(14px + env(safe-area-inset-bottom,0px))}
@@ -145,13 +147,16 @@ footer{text-align:center;padding:8px 12px calc(20px + env(safe-area-inset-bottom
   <h2>Backup</h2>
   <button id="export" type="button" class="btn" style="margin-top:6px">Exportar backup</button>
   <input id="import" type="file" accept=".json,application/json">
+  <button id="recuperarBtn" type="button" class="btn claro" style="margin-top:8px">🔧 Recuperar fotos</button>
+  <div id="diag"></div>
   <div id="espaco"></div>
 </section>
 
 </main>
 <footer>
   Desenvolvido por Luís Ricardo de Almeida Siqueira<br>
-  © 2026 Luís Ricardo de Almeida Siqueira — Todos os direitos reservados.
+  © 2026 Luís Ricardo de Almeida Siqueira — Todos os direitos reservados.<br>
+  <b>Versão 3.0</b>
 </footer>
 
 <div id="modal"><div class="caixa">
@@ -233,6 +238,123 @@ function normalizarRascunho(d){
   d.fotos=fs.filter(Boolean).map(function(f){return typeof f==="string"?{src:f,marcada:false}:f;});
   return d;
 }
+
+/* ===== RECUPERAR FOTOS (versões antigas guardavam a foto em outro formato/lugar) ===== */
+function srcValido(s){return typeof s==="string"&&/^data:image\//.test(s);}
+function acharImagem(v,prof){
+  prof=prof||0; if(v==null||prof>5)return null;
+  if(typeof v==="string"){
+    if(srcValido(v))return v;
+    if(/^\/9j\//.test(v))return "data:image/jpeg;base64,"+v;
+    if(/^iVBOR/.test(v))return "data:image/png;base64,"+v;
+    return null;
+  }
+  if(typeof Blob!=="undefined"&&v instanceof Blob)return v;
+  if(typeof v==="object"){
+    var ks=Object.keys(v);
+    for(var i=0;i<ks.length;i++){var r=acharImagem(v[ks[i]],prof+1);if(r)return r;}
+  }
+  return null;
+}
+function referencias(f){
+  var out=[];
+  if(typeof f==="string"||typeof f==="number")out.push(String(f));
+  else if(f&&typeof f==="object")Object.keys(f).forEach(function(k){
+    var x=f[k]; if((typeof x==="string"&&x.length<400)||typeof x==="number")out.push(String(x));
+  });
+  return out;
+}
+function blobParaDataUrl(b){
+  return new Promise(function(res){
+    var tipo=b.type&&/^image\//.test(b.type)?b.type:"image/jpeg";
+    var r=new FileReader(); r.onload=function(){res(r.result);}; r.onerror=function(){res(null);};
+    r.readAsDataURL(new Blob([b],{type:tipo}));
+  });
+}
+function chavesDe(k,v){
+  var ks=[k];
+  if(v&&typeof v==="object"&&!(v instanceof Blob))
+    ["id","key","fotoId","foto_id","photoId","nome","name","ref","uid","chave"].forEach(function(c){if(v[c]!=null)ks.push(v[c]);});
+  return ks;
+}
+async function varrerArmazenamento(){
+  var mapa={};
+  function guardar(chaves,val){
+    var img=acharImagem(val); if(!img)return;
+    chaves.forEach(function(k){if(k!=null&&k!=="")mapa[String(k)]=img;});
+  }
+  function guardarTudo(k,val){
+    if(val&&typeof val==="object"&&!(val instanceof Blob)){
+      Object.keys(val).forEach(function(c){guardar(chavesDe(c,val[c]),val[c]);});
+    }
+    guardar(chavesDe(k,val),val);
+  }
+  try{
+    for(var i=0;i<localStorage.length;i++){
+      var k=localStorage.key(i), raw=localStorage.getItem(k), val=raw;
+      try{val=JSON.parse(raw);}catch(err){}
+      guardarTudo(k,val);
+    }
+  }catch(err){}
+  if(indexedDB.databases){
+    var lista=[]; try{lista=await indexedDB.databases();}catch(err){}
+    for(var d=0;d<lista.length;d++){
+      var nome=lista[d].name; if(!nome||nome==="imoveis_vagos")continue;
+      try{
+        await new Promise(function(res){
+          var req=indexedDB.open(nome);
+          req.onerror=function(){res();};
+          req.onupgradeneeded=function(){try{req.transaction.abort();}catch(err){}};
+          req.onsuccess=function(){
+            var bd=req.result, stores=Array.prototype.slice.call(bd.objectStoreNames);
+            if(!stores.length){bd.close();res();return;}
+            var t=bd.transaction(stores,"readonly");
+            stores.forEach(function(st){
+              var c=t.objectStore(st).openCursor();
+              c.onsuccess=function(){var cur=c.result;if(!cur)return;guardarTudo(cur.primaryKey,cur.value);cur.continue();};
+            });
+            t.oncomplete=t.onerror=t.onabort=function(){bd.close();res();};
+          };
+          setTimeout(res,8000);
+        });
+      }catch(err){}
+    }
+  }
+  return mapa;
+}
+async function recuperarFotos(manual){
+  var quebradas=[];
+  registros.forEach(function(r){r.fotos.forEach(function(f,i){if(!srcValido(f&&f.src))quebradas.push({r:r,i:i,f:f});});});
+  $("diag").textContent="";
+  if(!quebradas.length){if(manual)alert("Todas as fotos estão OK.");return;}
+  var btn=$("recuperarBtn"); btn.textContent="🔧 Procurando fotos..."; btn.disabled=true;
+  var mapa=null, ok=0, alterados=[];
+  for(var q=0;q<quebradas.length;q++){
+    var it=quebradas[q], img=acharImagem(it.f);
+    if(!img){
+      if(!mapa){try{mapa=await varrerArmazenamento();}catch(err){mapa={};}}
+      var refs=referencias(it.f);
+      for(var j=0;j<refs.length;j++){if(mapa[refs[j]]){img=mapa[refs[j]];break;}}
+    }
+    if(img&&typeof img!=="string")img=await blobParaDataUrl(img);
+    if(srcValido(img)){
+      var marcada=(it.f&&typeof it.f==="object"&&"marcada" in it.f)?!!it.f.marcada:true;
+      it.r.fotos[it.i]={src:img,marcada:marcada}; ok++;
+      if(alterados.indexOf(it.r)<0)alterados.push(it.r);
+    }
+  }
+  for(var a=0;a<alterados.length;a++){try{await putRegistro(alterados[a]);}catch(err){}}
+  btn.textContent="🔧 Recuperar fotos"; btn.disabled=false;
+  render();
+  var falta=quebradas.length-ok;
+  if(falta){
+    var ex=quebradas.filter(function(x){return !srcValido(x.r.fotos[x.i]&&x.r.fotos[x.i].src);})[0];
+    var txt=""; try{txt=JSON.stringify(ex.f);}catch(err){txt=String(ex.f);}
+    $("diag").textContent="Formato da foto não encontrada: "+String(txt).slice(0,160);
+  }
+  if(ok||manual)alert(ok+" foto(s) recuperada(s)."+(falta?" "+falta+" não encontrada(s). Tire um print do aviso vermelho no card Backup e me mande.":""));
+}
+$("recuperarBtn").addEventListener("click",function(){recuperarFotos(true);});
 
 /* Passa os dados antigos do localStorage para o banco novo e libera espaço */
 async function migrar(){
@@ -591,7 +713,7 @@ function render(){
         '<button type="button" class="btn red" data-acao="excluir">🗑️ Excluir</button>'+
       '</div>';
     var th=div.querySelector(".thumbs");
-    if(th)r.fotos.forEach(function(f){var im=document.createElement("img");im.src=f.src;im.alt="Foto";im.addEventListener("click",function(){abrirModal(r);});th.appendChild(im);});
+    if(th)r.fotos.forEach(function(f){var im=document.createElement("img");im.src=f.src;im.alt="Foto";im.onerror=function(){var d=document.createElement("div");d.className="sem-foto";d.textContent="Foto não encontrada";this.replaceWith(d);};im.addEventListener("click",function(){abrirModal(r);});th.appendChild(im);});
     div.querySelector("[data-acao=ver]").addEventListener("click",function(){abrirModal(r);});
     div.querySelector("[data-acao=editar]").addEventListener("click",function(){editar(r);});
     div.querySelector("[data-acao=excluir]").addEventListener("click",async function(){
@@ -697,6 +819,7 @@ data.value=hoje(); medidores=[novoMedidor()]; renderMedidores(); renderFotos(); 
   registros=((await todosRegistros())||[]).map(normalizar).sort(function(a,b){return b.id-a.id;});
   rascunhos=(await kvGet("rascunhos"))||{};
   render(); mostrarEspaco();
+  recuperarFotos(false);
 })();
 
 })();
