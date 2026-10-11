@@ -49,6 +49,19 @@ input:disabled{opacity:.45}
 #editBanner button{border:0;background:#7a4b00;color:#fff;border-radius:7px;padding:6px 10px;font-weight:700;font-family:inherit}
 #cropPanel{display:none;margin-top:10px}
 #cropCanvas{width:100%;border:2px solid var(--azul);border-radius:8px;touch-action:none;background:#222}
+.aba{display:none}.aba.ativa{display:block}
+body{padding-bottom:calc(64px + env(safe-area-inset-bottom,0px))}
+#abas{position:fixed;left:0;right:0;bottom:0;z-index:30;display:grid;grid-template-columns:1fr 1fr;background:#fff;border-top:1px solid #d8e0e8;box-shadow:0 -2px 10px rgba(0,0,0,.06);padding-bottom:env(safe-area-inset-bottom,0px)}
+#abas button{border:0;background:none;height:58px;font-family:inherit;font-size:12px;font-weight:700;color:var(--suave);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;-webkit-tap-highlight-color:transparent}
+#abas button .ico{font-size:20px;line-height:1}
+#abas button.ativa{color:var(--azul)}
+#abas button.ativa::before{content:"";position:absolute;top:0;width:44px;height:3px;border-radius:0 0 3px 3px;background:var(--azul)}
+#abas button{position:relative}
+.badge{display:inline-block;min-width:18px;padding:0 5px;border-radius:9px;background:var(--azul);color:#fff;font-size:10px;line-height:16px;margin-left:3px}
+.busca{position:relative;margin:4px 0 8px}
+.busca input{padding-left:34px!important;padding-right:36px!important}
+.busca .lupa{position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:14px;pointer-events:none}
+.busca .limpar{position:absolute;right:6px;top:50%;transform:translateY(-50%);border:0;background:#e6ecf2;color:var(--azul);width:26px;height:26px;border-radius:50%;font-weight:800;display:none}
 .saved-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:6px 0 10px}
 #recordsFilter{font-size:12px;color:var(--suave)}
 #showAll{width:auto;height:32px;padding:0 14px;font-size:13px}
@@ -78,6 +91,7 @@ footer{text-align:center;padding:8px 12px calc(20px + env(safe-area-inset-bottom
   <button id="appUpdateBtn" type="button" title="Atualizar aplicativo" aria-label="Atualizar aplicativo">🔄</button>
 </header>
 <main>
+<div id="abaLancar" class="aba ativa">
 
 <section class="card">
   <div id="editBanner"><span>✏️ Editando registro</span><button id="cancelEdit" type="button">Cancelar</button></div>
@@ -129,16 +143,26 @@ footer{text-align:center;padding:8px 12px calc(20px + env(safe-area-inset-bottom
 </section>
 
 <section class="card">
-  <h2>Registros salvos</h2>
-  <div class="saved-top">
-    <span id="recordsFilter">Selecione uma etapa para ver seus registros.</span>
-    <button id="showAll" type="button" class="btn">Todos</button>
-  </div>
   <div class="acoes">
     <button type="button" id="cleanShareBtn" class="btn" title="Compartilhar fotos" aria-label="Compartilhar fotos">📎</button>
     <button type="button" id="save" class="btn" title="Salvar" aria-label="Salvar">💾</button>
     <button type="button" id="clear" class="btn" title="Limpar formulário" aria-label="Limpar formulário">🗑️</button>
     <button type="button" id="shareAppBtn" class="btn" title="Compartilhar aplicativo" aria-label="Compartilhar aplicativo">📲</button>
+  </div>
+</section>
+</div>
+
+<div id="abaRegistros" class="aba">
+<section class="card">
+  <h2>Registros salvos</h2>
+  <div class="busca">
+    <span class="lupa">🔍</span>
+    <input id="buscaReg" type="text" placeholder="Buscar endereço, casa ou medidor" autocomplete="off" enterkeyhint="search">
+    <button id="limparBusca" type="button" class="limpar" aria-label="Limpar busca">✕</button>
+  </div>
+  <div class="saved-top">
+    <span id="recordsFilter">Todos os registros</span>
+    <button id="showAll" type="button" class="btn">Todos</button>
   </div>
   <div id="records"></div>
 </section>
@@ -151,13 +175,18 @@ footer{text-align:center;padding:8px 12px calc(20px + env(safe-area-inset-bottom
   <div id="diag"></div>
   <div id="espaco"></div>
 </section>
+</div>
 
 </main>
 <footer>
   Desenvolvido por Luís Ricardo de Almeida Siqueira<br>
   © 2026 Luís Ricardo de Almeida Siqueira — Todos os direitos reservados.<br>
-  <b>Versão 3.0</b>
+  <b>Versão 3.2</b>
 </footer>
+<nav id="abas">
+  <button type="button" data-aba="abaLancar" class="ativa"><span class="ico">✏️</span>Lançar</button>
+  <button type="button" data-aba="abaRegistros"><span class="ico">📋</span><span>Registros<span id="contaReg" class="badge">0</span></span></button>
+</nav>
 
 <div id="modal"><div class="caixa">
   <div id="modalFotos"></div>
@@ -684,11 +713,23 @@ $("clear").addEventListener("click",function(){
 function render(){
   var todos=mostrarTodos||!etapaAtual;
   var lista=todos?registros:registros.filter(function(r){return Number(r.etapa)===Number(etapaAtual);});
-  $("recordsFilter").textContent=todos?"Todos os registros":"Registros da etapa "+etapaAtual;
+  $("contaReg").textContent=registros.length;
+  var termo=semAcento($("buscaReg").value.trim());
+  $("limparBusca").style.display=termo?"block":"none";
+  if(termo){
+    lista=registros;
+    var partes=termo.split(/\s+/);
+    lista=lista.filter(function(r){
+      var alvo=semAcento([r.endereco,r.numero,r.numero?"n "+r.numero:"",r.data?r.data.split("-").reverse().join("/"):""].concat(
+        r.medidores.map(function(m){return [m.complemento,m.medidor,m.leituras.join(" "),m.desocupado?"desocupado":""].join(" ");})).join(" "));
+      return partes.every(function(p){return alvo.indexOf(p)>=0;});
+    });
+  }
+  $("recordsFilter").textContent=termo?"Busca em todas as etapas ("+lista.length+")":(todos?"Todos os registros":"Registros da etapa "+etapaAtual)+" ("+lista.length+")";
   $("showAll").textContent=todos?"Etapa atual":"Todos";
   $("showAll").style.visibility=etapaAtual?"visible":"hidden";
   if(!lista.length){
-    records.innerHTML='<span style="font-size:12px;color:#667085">'+(todos?"Nenhum registro salvo.":"Nenhum registro salvo nesta etapa.")+'</span>';
+    records.innerHTML='<span style="font-size:12px;color:#667085">'+(termo?"Nada encontrado para essa busca.":(todos?"Nenhum registro salvo.":"Nenhum registro salvo nesta etapa."))+'</span>';
     return;
   }
   records.innerHTML="";
@@ -726,6 +767,16 @@ function render(){
     records.appendChild(div);
   });
 }
+function semAcento(t){return String(t||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");}
+function irPara(id){
+  document.querySelectorAll(".aba").forEach(function(a){a.classList.toggle("ativa",a.id===id);});
+  document.querySelectorAll("#abas button").forEach(function(b){b.classList.toggle("ativa",b.dataset.aba===id);});
+  window.scrollTo(0,0);
+}
+document.querySelectorAll("#abas button").forEach(function(b){b.addEventListener("click",function(){irPara(b.dataset.aba);});});
+$("buscaReg").addEventListener("input",render);
+$("buscaReg").addEventListener("keydown",function(ev){if(ev.key==="Enter")this.blur();});
+$("limparBusca").addEventListener("click",function(){$("buscaReg").value="";render();$("buscaReg").focus();});
 $("showAll").addEventListener("click",function(){mostrarTodos=!mostrarTodos;render();});
 
 function editar(r){
@@ -735,7 +786,7 @@ function editar(r){
   medidores=copia(r.medidores).map(function(m){if(!m.leituras.length)m.leituras=[""];return m;});
   fotos=r.fotos.slice(); editandoId=r.id;
   renderMedidores(); renderFotos(); mostrarEdicao(); guardarRascunho(); render();
-  window.scrollTo({top:0,behavior:"smooth"});
+  irPara("abaLancar");
 }
 
 /* ===== VER FOTOS ===== */
