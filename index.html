@@ -30,6 +30,24 @@ input:disabled{opacity:.45}
 .medidor-topo label{margin:0}
 .mini-del{border:0;background:#fde8e6;color:#b42318;font-weight:700;font-size:12px;border-radius:7px;padding:6px 10px;font-family:inherit}
 .reading-row{display:none}
+.pda-box{margin-top:10px;background:#eaf1f8;border:2px solid var(--azul);border-radius:12px;padding:10px}
+.pda-box .btn-pda{height:52px;font-size:16px}
+.pda-box .sub{font-size:11px;color:var(--suave);text-align:center;margin-top:6px}
+.pda-box .sub button{border:0;background:none;color:var(--azul);font-weight:700;text-decoration:underline;font-size:12px;font-family:inherit;padding:2px}
+#pdaStatus{display:none;margin-top:8px;border-radius:8px;padding:8px 10px;font-size:13px;font-weight:600;line-height:1.4}
+#pdaStatus.lendo{display:block;background:#fff4d6;color:#7a4b00}
+#pdaStatus.ok{display:block;background:#e3f6e8;color:#14532d}
+#pdaStatus.erro{display:block;background:#fde8e6;color:#b42318}
+.vago-box{margin-top:10px;border-top:1px dashed #c5cfd8;padding-top:8px}
+.vago-sec{margin-top:8px}
+.vago-tit{font-weight:700;font-size:13px;margin-bottom:6px}
+.vago-sec .grid2{margin-top:0}
+.vago-sec .btn{height:36px;font-size:13px}
+.mini-fotos{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.mini-foto{position:relative}
+.mini-foto img{width:64px;height:64px;object-fit:cover;border-radius:8px;display:block;background:#e5e7eb}
+.mini-foto button{position:absolute;top:-6px;right:-6px;width:22px;height:22px;border-radius:50%;border:0;background:#b42318;color:#fff;font-size:12px;font-weight:800;line-height:22px;padding:0}
+.foto-rot{font-size:11px;font-weight:800;color:var(--azul);margin:2px 0 4px}
 .vacant-row{display:flex!important;align-items:center;justify-content:space-between;gap:12px;margin:12px 0 2px!important;font-size:14px;cursor:pointer}
 .vacant-checkbox{-webkit-appearance:none;appearance:none;flex:0 0 28px;width:28px;height:28px;margin:0;border:2px solid var(--azul);border-radius:6px;background:#fff;position:relative;cursor:pointer}
 .vacant-checkbox:checked{background:var(--azul)}
@@ -96,10 +114,18 @@ footer{text-align:center;padding:8px 12px calc(20px + env(safe-area-inset-bottom
 <section class="card">
   <div id="editBanner"><span>✏️ Editando registro</span><button id="cancelEdit" type="button">Cancelar</button></div>
   <h2>Etapa da leitura</h2>
-  <div class="help">Selecione uma etapa:</div>
+  <div class="help" id="calInfo">Selecione uma etapa:</div>
   <select id="stageSelect" class="stage-select" aria-label="Selecione a etapa da leitura">
     <option value="">Selecione a etapa</option>
   </select>
+
+  <div class="pda-box">
+    <button id="pdaBtn" type="button" class="btn btn-pda">📟 Foto do PDA (cód. 15)</button>
+    <div class="sub">Tira a foto da tela e o app preenche endereço, número e medidor · <button id="pdaGalBtn" type="button">escolher da galeria</button></div>
+    <input id="pdaCam" class="escondido" type="file" accept="image/*" capture="environment">
+    <input id="pdaGal" class="escondido" type="file" accept="image/*">
+    <div id="pdaStatus"></div>
+  </div>
 
   <div class="linha">
     <div>
@@ -121,6 +147,8 @@ footer{text-align:center;padding:8px 12px calc(20px + env(safe-area-inset-bottom
   <label>Fotos do endereço</label>
   <input id="cameraInput" class="escondido" type="file" accept="image/*" capture="environment">
   <input id="galleryInput" class="escondido" type="file" accept="image/*" multiple>
+  <input id="extraCam" class="escondido" type="file" accept="image/*" capture="environment">
+  <input id="extraGal" class="escondido" type="file" accept="image/*" multiple>
   <div class="grid2" style="margin-top:0">
     <label for="cameraInput" class="btn" style="margin:0">📷 Câmera</label>
     <label for="galleryInput" class="btn" style="margin:0">🖼️ Galeria</label>
@@ -181,7 +209,7 @@ footer{text-align:center;padding:8px 12px calc(20px + env(safe-area-inset-bottom
 <footer>
   Desenvolvido por Luís Ricardo de Almeida Siqueira<br>
   © 2026 Luís Ricardo de Almeida Siqueira — Todos os direitos reservados.<br>
-  <b>Versão 3.2</b>
+  <b>Versão 3.5</b>
 </footer>
 <nav id="abas">
   <button type="button" data-aba="abaLancar" class="ativa"><span class="ico">✏️</span>Lançar</button>
@@ -214,7 +242,9 @@ for(var e=1;e<=18;e++){var o=document.createElement("option");o.value=e;o.textCo
 function hoje(){var d=new Date();function z(n){return n<10?"0"+n:n;}return d.getFullYear()+"-"+z(d.getMonth()+1)+"-"+z(d.getDate());}
 function cheio(v){return String(v||"").trim()!=="";}
 function esc(v){return String(v==null?"":v).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c];});}
-function novoMedidor(){return {complemento:"",medidor:"",leituras:[""],desocupado:false};}
+function novoMedidor(){return {complemento:"",medidor:"",leituras:[""],desocupado:false,fotosPda:[],fotosImovel:[]};}
+function ajustarMed(m){if(!Array.isArray(m.fotosPda))m.fotosPda=[];if(!Array.isArray(m.fotosImovel))m.fotosImovel=[];return m;}
+var TIPOS={fotosPda:{rot:"📟 Tela do PDA",carimbo:"Tela do PDA"},fotosImovel:{rot:"🏠 Foto do imóvel",carimbo:"Imóvel desocupado (cód. 15)"}};
 function copia(x){return JSON.parse(JSON.stringify(x));}
 
 /* ===== BANCO DE DADOS (IndexedDB: muito mais espaço que o localStorage) ===== */
@@ -254,6 +284,7 @@ function normalizar(r){
   }
   var fs=Array.isArray(r.fotos)?r.fotos:(r.foto?[r.foto]:[]);
   r.fotos=fs.filter(Boolean).map(function(f){return typeof f==="string"?{src:f,marcada:true}:f;});
+  r.medidores.forEach(ajustarMed);
   delete r.foto; delete r.medidor; delete r.leituras; delete r.leitura; delete r.desocupado;
   r.id=Number(r.id)||Date.now()+Math.random();
   return r;
@@ -434,8 +465,20 @@ function renderMedidores(){
     for(var j=0;j<NUM_LEITURAS;j++){
       h+='<div class="reading-row"><label>Leitura '+(j+1)+'</label><input type="text" inputmode="decimal" data-campo="leitura" data-j="'+j+'" placeholder="Digite a leitura" autocomplete="off" value="'+esc(m.leituras[j]||"")+'"></div>';
     }
-    h+='<label class="vacant-row"><span>Imóvel desocupado</span><input type="checkbox" class="vacant-checkbox" data-campo="desocupado"'+(m.desocupado?" checked":"")+'></label>';
+    h+='<label class="vacant-row"><span>Imóvel desocupado (cód. 15)</span><input type="checkbox" class="vacant-checkbox" data-campo="desocupado"'+(m.desocupado?" checked":"")+'></label>';
+    ajustarMed(m);
+    if(m.desocupado){
+      h+='<div class="vago-box">';
+      ["fotosPda","fotosImovel"].forEach(function(tp){
+        h+='<div class="vago-sec"><div class="vago-tit">'+TIPOS[tp].rot+'</div>'+
+          '<div class="grid2"><button type="button" class="btn" data-foto="cam" data-tipo="'+tp+'">📷 Câmera</button>'+
+          '<button type="button" class="btn claro" data-foto="gal" data-tipo="'+tp+'">🖼️ Galeria</button></div>'+
+          '<div class="mini-fotos">'+m[tp].map(function(f,k){return '<div class="mini-foto"><img alt="" data-src-i="'+k+'" data-tipo="'+tp+'"><button type="button" data-delfoto="'+k+'" data-tipo="'+tp+'" aria-label="Excluir foto">✕</button></div>';}).join("")+'</div></div>';
+      });
+      h+='</div>';
+    }
     card.innerHTML=h;
+    card.querySelectorAll("img[data-src-i]").forEach(function(im){im.src=m[im.dataset.tipo][Number(im.dataset.srcI)].src;});
     medidoresBox.appendChild(card);
     atualizarLeituras(card,m);
   });
@@ -458,9 +501,21 @@ medidoresBox.addEventListener("input",function(ev){
 medidoresBox.addEventListener("change",function(ev){
   var el=ev.target; if(el.dataset.campo!=="desocupado")return;
   var card=el.closest(".medidor-card"), m=medidores[Number(card.dataset.i)];
-  m.desocupado=el.checked; atualizarLeituras(card,m); guardarRascunho();
+  m.desocupado=el.checked; renderMedidores(); guardarRascunho();
 });
+var alvoFoto=null;
 medidoresBox.addEventListener("click",function(ev){
+  var bf=ev.target.closest("[data-foto]");
+  if(bf){
+    alvoFoto={i:Number(bf.closest(".medidor-card").dataset.i),tipo:bf.dataset.tipo};
+    $(bf.dataset.foto==="cam"?"extraCam":"extraGal").click(); return;
+  }
+  var bd=ev.target.closest("[data-delfoto]");
+  if(bd){
+    var mm=medidores[Number(bd.closest(".medidor-card").dataset.i)];
+    if(!confirm("Excluir esta foto?"))return;
+    mm[bd.dataset.tipo].splice(Number(bd.dataset.delfoto),1); renderMedidores(); guardarRascunho(); cacheShare=null; return;
+  }
   var b=ev.target.closest("[data-acao=remover]"); if(!b)return;
   var i=Number(b.closest(".medidor-card").dataset.i);
   if(!confirm("Remover o medidor "+(i+1)+"?"))return;
@@ -521,20 +576,28 @@ function reduzirImagem(src,max,cb){
   img.onerror=function(){cb(null);};
   img.src=src;
 }
-function lerFotos(input){
+function lerFotos(input,destino,fim){
   var arqs=Array.prototype.slice.call(input.files||[]).filter(function(f){return /^image\//.test(f.type);});
   input.value=""; if(!arqs.length)return;
+  destino=destino||fotos; fim=fim||function(){renderFotos();};
   var i=0;
   (function prox(){
-    if(i>=arqs.length){renderFotos();guardarRascunho();return;}
+    if(i>=arqs.length){fim();guardarRascunho();cacheShare=null;return;}
     var url=URL.createObjectURL(arqs[i]);
     reduzirImagem(url,1280,function(r){
       URL.revokeObjectURL(url);
-      if(r)fotos.push({src:r,marcada:false}); else alert("Não foi possível abrir uma das fotos.");
+      if(r)destino.push({src:r,marcada:false}); else alert("Não foi possível abrir uma das fotos.");
       i++; prox();
     });
   })();
 }
+function lerExtra(input){
+  if(!alvoFoto||!medidores[alvoFoto.i]){input.value="";return;}
+  var m=ajustarMed(medidores[alvoFoto.i]);
+  lerFotos(input,m[alvoFoto.tipo],renderMedidores);
+}
+$("extraCam").addEventListener("change",function(){lerExtra(this);});
+$("extraGal").addEventListener("change",function(){lerExtra(this);});
 cameraInput.addEventListener("change",function(){lerFotos(cameraInput);});
 galleryInput.addEventListener("change",function(){lerFotos(galleryInput);});
 
@@ -599,6 +662,71 @@ function enviar(pacote){
   }
   pacote.arquivos.forEach(function(f){baixar(f,f.name);});
 }
+/* Junta todas as fotos do endereço: PDA e imóvel de cada medidor + fotos do medidor */
+function linhaMed(m,i,total){
+  var comp=String(m.complemento||"").trim(), med=String(m.medidor||"").trim();
+  if(!comp&&total>1)comp="Medidor "+(i+1);
+  var t=comp; if(med)t+=(t?" | ":"")+"Med. "+med; return t;
+}
+function itensFotos(end,num,meds,fotosEnd){
+  var base=linhasCarimbo(end,num,[]), itens=[];
+  meds.forEach(function(m,i){
+    ajustarMed(m);
+    ["fotosPda","fotosImovel"].forEach(function(tp){
+      m[tp].forEach(function(f){
+        var l=base.slice(); var lm=linhaMed(m,i,meds.length); if(lm)l.push(lm); l.push(TIPOS[tp].carimbo);
+        itens.push({f:f,linhas:l,rot:TIPOS[tp].rot+(meds.length>1?" - "+(lm||""):"")});
+      });
+    });
+  });
+  var lt=linhasCarimbo(end,num,meds);
+  fotosEnd.forEach(function(f){itens.push({f:f,linhas:lt,rot:"⚡ Foto do medidor"});});
+  return itens;
+}
+function resumoTexto(end,num,etapa,dataStr,meds){
+  var l=linhasCarimbo(end,num,[]), out=[];
+  out.push("📍 "+(l[0]||"Sem endereço"));
+  var info=[]; if(etapa)info.push("Etapa "+etapa); if(dataStr)info.push(dataStr.split("-").reverse().join("/"));
+  if(info.length)out.push(info.join(" - "));
+  meds.forEach(function(m,i){
+    var t=linhaMed(m,i,meds.length)||"Medidor";
+    var lt=(m.leituras||[]).filter(cheio);
+    t+=" | "+(m.desocupado?"Imóvel desocupado (cód. 15)":"Leitura "+lt.join(" / "));
+    out.push(t);
+  });
+  return out.join("\n");
+}
+function compartilharItens(itens,texto,titulo){
+  if(cacheShare){enviar(cacheShare);return;}
+  if(!itens.length){
+    if(navigator.share)navigator.share({title:titulo,text:texto}).catch(function(){});
+    else alert("Não há foto para compartilhar.");
+    return;
+  }
+  var prontas=[],i=0;
+  (function prox(){
+    if(i<itens.length){
+      var it=itens[i];
+      if(it.f.marcada){prontas.push(it.f.src);i++;prox();}
+      else carimbar(it.f.src,it.linhas,function(r){prontas.push(r);i++;prox();});
+      return;
+    }
+    var nomeBase=(titulo||"medidor").replace(/[^\wÀ-ú]+/g,"-").replace(/^-|-$/g,"")||"medidor";
+    var arquivos=prontas.map(function(d,k){
+      return new File([dataUrlParaBlob(d)],nomeBase+(prontas.length>1?"-"+(k+1):"")+".jpg",{type:"image/jpeg"});
+    });
+    enviar({titulo:titulo,texto:texto,arquivos:arquivos});
+  })();
+}
+function compartilharForm(){
+  var meds=medidores.map(ajustarMed);
+  var itens=itensFotos(endereco.value,numero.value,meds,fotos);
+  compartilharItens(itens,resumoTexto(endereco.value,numero.value,etapaAtual,data.value,meds),linhasCarimbo(endereco.value,numero.value,[])[0]||"Medidor");
+}
+function compartilharRegistro(r){
+  var itens=itensFotos(r.endereco,r.numero,r.medidores,r.fotos);
+  compartilharItens(itens,resumoTexto(r.endereco,r.numero,r.etapa,r.data,r.medidores),linhasCarimbo(r.endereco,r.numero,[])[0]||"Medidor");
+}
 function compartilhar(lista,linhas){
   if(!lista.length){alert("Não há foto para compartilhar.");return;}
   if(cacheShare){enviar(cacheShare);return;}
@@ -611,8 +739,8 @@ function compartilhar(lista,linhas){
     enviar({titulo:linhas[0]||"Medidor",texto:texto,arquivos:arquivos});
   });
 }
-$("shareBtn").addEventListener("click",function(){compartilhar(fotos,linhasForm());});
-$("cleanShareBtn").addEventListener("click",function(){compartilhar(fotos,linhasForm());});
+$("shareBtn").addEventListener("click",compartilharForm);
+$("cleanShareBtn").addEventListener("click",compartilharForm);
 
 /* ===== RECORTE ===== */
 var cropImg=null,cx=0,cy=0,cw=0,ch=0,arrastando=false;
@@ -663,15 +791,204 @@ $("cancelCrop").addEventListener("click",function(){cropPanel.style.display="non
 stageSelect.addEventListener("change",function(){
   var n=Number(this.value); if(!n)return;
   guardarRascunho(); etapaAtual=n; carregarRascunho(n);
+  kvSet("ultimaEtapa",n).catch(function(){});
   mostrarTodos=false; render();
 });
 [endereco,numero].forEach(function(el){el.addEventListener("input",function(){atualizarLegendas();guardarRascunho();});});
-data.addEventListener("change",guardarRascunho);
+
+/* ===== FOTO DO PDA: LÊ A TELA E PREENCHE SOZINHO ===== */
+var ocrWorker=null, ocrCarregando=null;
+function statusPda(cls,txt){var el=$("pdaStatus");el.className=cls;el.textContent=txt;}
+function carregarScript(url){
+  return new Promise(function(res,rej){var sc=document.createElement("script");sc.src=url;sc.onload=res;sc.onerror=rej;document.head.appendChild(sc);});
+}
+function obterOcr(){
+  if(ocrWorker)return Promise.resolve(ocrWorker);
+  if(ocrCarregando)return ocrCarregando;
+  ocrCarregando=(window.Tesseract?Promise.resolve():carregarScript("https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"))
+  .then(function(){return Tesseract.createWorker("eng");})
+  .then(function(w){return w.setParameters({tessedit_pageseg_mode:"6"}).then(function(){ocrWorker=w;return w;});})
+  .catch(function(err){ocrCarregando=null;throw err;});
+  return ocrCarregando;
+}
+/* Prepara a imagem para leitura: usa o canal vermelho (o texto azul do PDA fica escuro) e aumenta o contraste */
+function prepararOcr(src){
+  return new Promise(function(res){
+    var img=new Image();
+    img.onload=function(){
+      var w=Math.min(1600,img.width), h=Math.round(img.height*w/img.width);
+      var c=document.createElement("canvas"); c.width=w; c.height=h;
+      var ctx=c.getContext("2d"); ctx.drawImage(img,0,0,w,h);
+      var d=ctx.getImageData(0,0,w,h), px=d.data, hist=new Array(256).fill(0), n=w*h;
+      for(var i=0;i<px.length;i+=4)hist[px[i]]++;
+      var lo=0,hi=255,acc=0; while(lo<255&&(acc+=hist[lo])<n*.02)lo++;
+      acc=0; while(hi>0&&(acc+=hist[hi])<n*.02)hi--;
+      var esc=255/Math.max(1,hi-lo);
+      for(var j=0;j<px.length;j+=4){var v=Math.max(0,Math.min(255,(px[j]-lo)*esc));px[j]=px[j+1]=px[j+2]=v;}
+      ctx.putImageData(d,0,0); res(c);
+    };
+    img.onerror=function(){res(null);};
+    img.src=src;
+  });
+}
+function titulo(t){
+  var peq=["de","da","do","das","dos","e"];
+  return String(t).toLowerCase().split(/\s+/).map(function(p,i){
+    if(i>0&&peq.indexOf(p)>=0)return p;
+    return p.charAt(0).toUpperCase()+p.slice(1);
+  }).join(" ");
+}
+function lerTelaPda(texto){
+  var out={endereco:"",numero:"",medidor:""};
+  var t=String(texto||"").replace(/\r/g,"");
+  var mm=t.match(/\bM\s*D\s*[:;.,]?\s*([A-Z0-9]{5,12})/i);
+  if(mm){
+    var md=mm[1].toUpperCase(), ini=md.charAt(0), resto=md.slice(1).replace(/O/g,"0").replace(/[IL]/g,"1").replace(/S/g,"5").replace(/B/g,"8").replace(/Z/g,"2");
+    if(/^\d+$/.test(resto))out.medidor=(/\d/.test(ini)?ini.replace("0","M"):ini)+resto;
+  }
+  var tipos="R|RUA|AV|AVENIDA|TV|TRAV|TRAVESSA|AL|ALAMEDA|PC|PCA|PRACA|PRAÇA|EST|ESTR|ROD|VL|VIELA|LG|LGO|LARGO|VD";
+  var re=new RegExp("(?:^|\\n)\\W*((?:"+tipos+")\\.?\\s+[A-ZÀ-Ú0-9 .'´`-]+?)\\s*[,.]\\s*([0-9OIl]{1,6}[A-Z]?)\\b","i");
+  var ma=t.match(re);
+  if(!ma){ma=t.match(/(?:^|\n)\W*([A-ZÀ-Ú][A-ZÀ-Ú .'-]{3,}?)\s*,\s*([0-9OIl]{1,6})\s*,/i);}
+  if(ma){
+    out.endereco=titulo(ma[1].replace(/\s+/g," ").trim());
+    out.numero=ma[2].replace(/O/g,"0").replace(/[Il]/g,"1");
+  }
+  return out;
+}
+function mesmoEndereco(a,b){return semAcento(a).replace(/[^a-z0-9]/g,"")===semAcento(b).replace(/[^a-z0-9]/g,"");}
+async function processarPda(input){
+  var arq=input.files&&input.files[0]; input.value="";
+  if(!arq)return;
+  statusPda("lendo","⏳ Lendo a tela do PDA...");
+  var url=URL.createObjectURL(arq);
+  var foto=await new Promise(function(res){reduzirImagem(url,1600,res);});
+  URL.revokeObjectURL(url);
+  if(!foto){statusPda("erro","❌ Não foi possível abrir a foto.");return;}
+  var lido={endereco:"",numero:"",medidor:""};
+  try{
+    var w=await obterOcr();
+    var cv=await prepararOcr(foto);
+    var r=await w.recognize(cv);
+    lido=lerTelaPda(r.data.text);
+  }catch(err){
+    statusPda("erro","⚠️ Sem internet para ler a foto agora. A foto foi guardada; preencha o endereço e o medidor à mão.");
+  }
+  var fotoMenor=await new Promise(function(res){reduzirImagem(foto,1280,res);})||foto;
+
+  /* Se o formulário já tem OUTRO endereço não salvo, pergunta antes de trocar */
+  var temOutro=cheio(endereco.value)&&lido.endereco&&!mesmoEndereco(endereco.value+numero.value,lido.endereco+lido.numero);
+  if(temOutro&&!confirm("O formulário tem outro endereço que ainda não foi salvo ("+endereco.value+", "+numero.value+").\n\nOK = trocar pelo endereço novo\nCancelar = manter e só juntar a foto")){
+    lido.endereco="";lido.numero="";
+  }else if(temOutro){
+    medidores=[novoMedidor()]; fotos=[]; editandoId=null; mostrarEdicao();
+  }
+  if(lido.endereco){endereco.value=lido.endereco;numero.value=lido.numero;}
+
+  /* Escolhe o medidor: o mesmo número, ou um vazio, ou cria outro (vários medidores no endereço) */
+  var alvo=null;
+  if(lido.medidor)alvo=medidores.filter(function(m){return String(m.medidor).toUpperCase()===lido.medidor;})[0];
+  if(!alvo)alvo=medidores.filter(function(m){return !cheio(m.medidor);})[0];
+  if(!alvo){alvo=novoMedidor();medidores.push(alvo);}
+  ajustarMed(alvo);
+  if(lido.medidor)alvo.medidor=lido.medidor;
+  alvo.desocupado=true;
+  alvo.fotosPda.push({src:fotoMenor,marcada:false});
+  renderMedidores(); atualizarLegendas(); guardarRascunho(); cacheShare=null;
+
+  if(!$("pdaStatus").classList.contains("erro")){
+    var falta=[]; if(!lido.endereco)falta.push("endereço"); if(!lido.medidor)falta.push("medidor");
+    if(falta.length)statusPda("erro","⚠️ Não consegui ler o "+falta.join(" e o ")+". Digite à mão ou tire outra foto mais de frente, sem reflexo.");
+    else statusPda("ok","✅ "+lido.endereco+", nº "+lido.numero+" | Med. "+lido.medidor+"\nConfira, tire a foto do imóvel se quiser e toque em 💾.");
+  }
+}
+function abrirPda(qual){
+  if(!etapaAtual){var e=etapaDoDia(hoje()).etapa;if(e)trocarEtapa(e);}
+  if(!etapaAtual){alert("Escolha a etapa primeiro.");stageSelect.focus();return;}
+  $(qual).click();
+  obterOcr().catch(function(){});
+}
+$("pdaBtn").addEventListener("click",function(){abrirPda("pdaCam");});
+$("pdaGalBtn").addEventListener("click",function(){abrirPda("pdaGal");});
+$("pdaCam").addEventListener("change",function(){processarPda(this);});
+$("pdaGal").addEventListener("change",function(){processarPda(this);});
+data.addEventListener("change",function(){
+  if(!editandoId){var e=etapaDoDia(data.value).etapa; if(e&&e!==etapaAtual){var dv=data.value;trocarEtapa(e);data.value=dv;}}
+  guardarRascunho(); mostrarCal();
+});
+
+/* ===== CALENDÁRIO DE LEITURA (etapa 1 a 18 de cada mês) ===== */
+var CAL_TXT="2025-12:03,04,05,08,09,10,11,12,15,16,17,18,19,22,23,24,26,27;"+
+"2026-01:02,05,06,07,08,09,12,13,14,15,16,19,20,21,22,23,26,27;"+
+"2026-02:02,03,04,05,06,09,10,11,12,13,16,17,18,19,20,23,24,25;"+
+"2026-03:04,05,06,09,10,11,12,13,16,17,18,19,20,23,24,25,26,27;"+
+"2026-04:01,02,06,07,08,09,10,11,13,14,15,16,17,20,22,23,24,27;"+
+"2026-05:04,05,06,07,08,11,12,13,14,15,18,19,20,21,22,25,26,27;"+
+"2026-06:02,03,05,08,09,10,11,12,15,16,17,18,19,22,23,24,25,26;"+
+"2026-07:02,03,06,07,08,10,13,14,15,16,17,20,21,22,23,24,27,28;"+
+"2026-08:03,04,05,06,07,10,11,12,13,14,17,18,19,20,21,24,25,26;"+
+"2026-09:02,03,04,08,09,10,11,14,15,16,17,18,21,22,23,24,25,28;"+
+"2026-10:01,02,05,06,07,08,09,13,14,15,16,19,20,21,22,23,26,27;"+
+"2026-11:03,04,05,06,07,09,10,11,12,13,16,17,18,19,23,24,25,26;"+
+"2026-12:02,03,04,07,09,10,11,14,15,16,17,18,21,22,23,24,26,28";
+var CAL={}, CAL_FIM="";
+CAL_TXT.split(";").forEach(function(mes){
+  var p=mes.split(":"), dias=p[1].split(",");
+  dias.forEach(function(d,i){var k=p[0]+"-"+d;CAL[k]=i+1;if(k>CAL_FIM)CAL_FIM=k;});
+});
+var ajustesCal={};
+function diasUteisEntre(a,b){ /* dias de segunda a sexta depois de a até b */
+  var d=new Date(a+"T12:00:00"), fim=new Date(b+"T12:00:00"), n=0;
+  while(d<fim){d.setDate(d.getDate()+1);var w=d.getDay();if(w>0&&w<6)n++;}
+  return n;
+}
+function etapaDoDia(dia){
+  if(!dia)return {etapa:0,tipo:""};
+  if(ajustesCal[dia])return {etapa:ajustesCal[dia],tipo:"ajuste"};
+  if(CAL[dia])return {etapa:CAL[dia],tipo:"cal"};
+  /* último dia conhecido antes da data (calendário ou ajuste feito ao salvar) */
+  var melhor="",et=0;
+  Object.keys(CAL).concat(Object.keys(ajustesCal)).forEach(function(k){if(k<dia&&k>melhor){melhor=k;et=ajustesCal[k]||CAL[k];}});
+  if(!melhor)return {etapa:0,tipo:""};
+  if(dia<=CAL_FIM)return {etapa:et,tipo:"cal"};
+  /* Depois do fim do calendário: se você já lançou neste mês numa etapa corrigida,
+     segue dali (1 etapa por dia útil); senão usa a mesma data do ano anterior */
+  if(ajustesCal[melhor]&&melhor.slice(0,7)===dia.slice(0,7))
+    return {etapa:Math.min(18,ajustesCal[melhor]+diasUteisEntre(melhor,dia)),tipo:"previsto"};
+  var ano=Number(dia.slice(0,4))-1, antes=ano+dia.slice(4);
+  var r=etapaDoDia(antes);
+  return {etapa:r.etapa,tipo:r.etapa?"previsto":""};
+}
+function mostrarCal(){
+  var r=etapaDoDia(data.value||hoje()), el=$("calInfo");
+  if(!r.etapa){el.textContent="Selecione uma etapa:";return;}
+  var dd=(data.value||hoje()).split("-").reverse().slice(0,2).join("/");
+  var txt=r.tipo==="previsto"?"📅 Previsto para "+dd+": etapa "+r.etapa+" (confira)":"📅 Calendário "+dd+": etapa "+r.etapa;
+  if(etapaAtual&&etapaAtual!==r.etapa)txt+=" | usando etapa "+etapaAtual;
+  el.textContent=txt;
+}
+function trocarEtapa(n){
+  if(!n||n===etapaAtual)return;
+  guardarRascunho(); etapaAtual=n; stageSelect.value=String(n); carregarRascunho(n);
+  mostrarTodos=false; render();
+}
+function etapaDeHoje(){
+  if(editandoId)return;
+  var e=etapaDoDia(hoje()).etapa;
+  if(e)trocarEtapa(e);
+  if(!editandoId&&!cheio(endereco.value))data.value=hoje();
+  mostrarCal();
+}
+stageSelect.addEventListener("change",mostrarCal);
+var diaAberto=hoje();
+document.addEventListener("visibilitychange",function(){
+  if(document.visibilityState==="visible"&&hoje()!==diaAberto){diaAberto=hoje();etapaDeHoje();}
+});
 
 function mostrarEdicao(){$("editBanner").style.display=editandoId?"flex":"none";}
 function limparForm(){
   endereco.value=""; numero.value=""; medidores=[novoMedidor()]; fotos=[]; editandoId=null;
-  cropPanel.style.display="none";
+  cropPanel.style.display="none"; $("pdaStatus").className="";
   renderMedidores(); renderFotos(); mostrarEdicao(); guardarRascunho();
 }
 $("cancelEdit").addEventListener("click",function(){if(confirm("Cancelar a edição?"))limparForm();});
@@ -690,10 +1007,16 @@ $("save").addEventListener("click",async function(){
     endereco:endereco.value.trim(), numero:numero.value.trim(),
     medidores:medidores.map(function(m){
       return {complemento:String(m.complemento||"").trim(),medidor:String(m.medidor).trim(),
-              leituras:m.desocupado?[]:m.leituras.filter(cheio).map(function(v){return String(v).trim();}),desocupado:!!m.desocupado};
+              leituras:m.desocupado?[]:m.leituras.filter(cheio).map(function(v){return String(v).trim();}),desocupado:!!m.desocupado,
+              fotosPda:m.desocupado?(m.fotosPda||[]).slice():[],fotosImovel:m.desocupado?(m.fotosImovel||[]).slice():[]};
     }),
     fotos:fotos.slice()
   };
+  /* Aprende: se lançou hoje numa etapa diferente da prevista, guarda como ajuste do calendário */
+  if(reg.data===hoje()&&!editandoId){
+    var prev=etapaDoDia(reg.data);
+    if(prev.etapa!==reg.etapa&&prev.tipo!=="cal"){ajustesCal[reg.data]=reg.etapa;kvSet("ajustesCal",ajustesCal).catch(function(){});}
+  }
   try{await putRegistro(reg);}
   catch(err){alert("Não foi possível salvar. O celular está sem espaço livre. Exporte o backup e exclua registros antigos.");return;}
   var eraEdicao=!!editandoId;
@@ -721,7 +1044,7 @@ function render(){
     var partes=termo.split(/\s+/);
     lista=lista.filter(function(r){
       var alvo=semAcento([r.endereco,r.numero,r.numero?"n "+r.numero:"",r.data?r.data.split("-").reverse().join("/"):""].concat(
-        r.medidores.map(function(m){return [m.complemento,m.medidor,m.leituras.join(" "),m.desocupado?"desocupado":""].join(" ");})).join(" "));
+        r.medidores.map(function(m){return [m.complemento,m.medidor,m.leituras.join(" "),m.desocupado?"desocupado 15 cod 15 vago":""].join(" ");})).join(" "));
       return partes.every(function(p){return alvo.indexOf(p)>=0;});
     });
   }
@@ -735,27 +1058,30 @@ function render(){
   records.innerHTML="";
   lista.forEach(function(r){
     var div=document.createElement("div"); div.className="record";
+    var itens=itensFotos(r.endereco,r.numero,r.medidores,r.fotos);
     var meds=r.medidores.map(function(m,i){
       var nome=m.complemento||(r.medidores.length>1?"Medidor "+(i+1):"");
       return '<div class="med-linha">'+(nome?'<b>'+esc(nome)+'</b><br>':'')+
         'Medidor: <b>'+esc(m.medidor)+'</b><br>'+
-        (m.desocupado?'<b>Imóvel desocupado</b>':'Leitura'+(m.leituras.length>1?'s':'')+': <b>'+esc(m.leituras.join(" / "))+'</b>')+'</div>';
+        (m.desocupado?'<b>Imóvel desocupado (cód. 15)</b>':'Leitura'+(m.leituras.length>1?'s':'')+': <b>'+esc(m.leituras.join(" / "))+'</b>')+'</div>';
     }).join("");
     div.innerHTML='<div class="tit">'+esc(r.endereco)+(r.numero?", nº "+esc(r.numero):"")+'</div>'+
       '<span class="tag">Etapa '+esc(r.etapa)+'</span>'+
       '<span class="tag">'+(r.data?esc(r.data.split("-").reverse().join("/")):"")+'</span>'+
-      '<span class="tag">'+r.fotos.length+' foto'+(r.fotos.length===1?'':'s')+'</span>'+
+      '<span class="tag">'+itens.length+' foto'+(itens.length===1?'':'s')+'</span>'+
       (r.medidores.length>1?'<span class="tag">'+r.medidores.length+' medidores</span>':'')+
       meds+
-      (r.fotos.length?'<div class="thumbs"></div>':'')+
+      (itens.length?'<div class="thumbs"></div>':'')+
       '<div class="grid3">'+
         '<button type="button" class="btn claro" data-acao="ver">🖼️ Ver fotos</button>'+
         '<button type="button" class="btn" data-acao="editar">✏️ Editar</button>'+
         '<button type="button" class="btn red" data-acao="excluir">🗑️ Excluir</button>'+
-      '</div>';
+      '</div>'+
+      '<button type="button" class="btn" data-acao="share" style="margin-top:8px">📤 Compartilhar tudo</button>';
     var th=div.querySelector(".thumbs");
-    if(th)r.fotos.forEach(function(f){var im=document.createElement("img");im.src=f.src;im.alt="Foto";im.onerror=function(){var d=document.createElement("div");d.className="sem-foto";d.textContent="Foto não encontrada";this.replaceWith(d);};im.addEventListener("click",function(){abrirModal(r);});th.appendChild(im);});
+    if(th)itens.forEach(function(it){var f=it.f;var im=document.createElement("img");im.src=f.src;im.alt="Foto";im.onerror=function(){var d=document.createElement("div");d.className="sem-foto";d.textContent="Foto não encontrada";this.replaceWith(d);};im.addEventListener("click",function(){abrirModal(r);});th.appendChild(im);});
     div.querySelector("[data-acao=ver]").addEventListener("click",function(){abrirModal(r);});
+    div.querySelector("[data-acao=share]").addEventListener("click",function(){cacheShare=null;compartilharRegistro(r);});
     div.querySelector("[data-acao=editar]").addEventListener("click",function(){editar(r);});
     div.querySelector("[data-acao=excluir]").addEventListener("click",async function(){
       if(!confirm("Excluir este registro?"))return;
@@ -783,7 +1109,7 @@ function editar(r){
   guardarRascunho();
   etapaAtual=Number(r.etapa); stageSelect.value=String(etapaAtual);
   endereco.value=r.endereco||""; numero.value=r.numero||""; data.value=r.data||hoje();
-  medidores=copia(r.medidores).map(function(m){if(!m.leituras.length)m.leituras=[""];return m;});
+  medidores=copia(r.medidores).map(function(m){if(!m.leituras.length)m.leituras=[""];return ajustarMed(m);});
   fotos=r.fotos.slice(); editandoId=r.id;
   renderMedidores(); renderFotos(); mostrarEdicao(); guardarRascunho(); render();
   irPara("abaLancar");
@@ -791,16 +1117,18 @@ function editar(r){
 
 /* ===== VER FOTOS ===== */
 function abrirModal(r){
-  if(!r.fotos.length){alert("Este registro não tem fotos.");return;}
+  var itens=itensFotos(r.endereco,r.numero,r.medidores,r.fotos);
+  if(!itens.length){alert("Este registro não tem fotos.");return;}
   registroModal=r; cacheShare=null;
-  var l=linhasCarimbo(r.endereco,r.numero,r.medidores), box=$("modalFotos");
+  var box=$("modalFotos");
   box.innerHTML="";
-  r.fotos.forEach(function(f){
-    var d=document.createElement("div");
-    d.innerHTML='<img alt="Foto">'+(f.marcada?'':'<div class="foto-legenda"></div>');
+  itens.forEach(function(it){
+    var f=it.f, d=document.createElement("div");
+    d.innerHTML='<div class="foto-rot" style="color:#fff"></div><img alt="Foto">'+(f.marcada?'':'<div class="foto-legenda"></div>');
+    d.querySelector(".foto-rot").textContent=it.rot;
     d.querySelector("img").src=f.src;
     if(f.marcada)d.querySelector("img").style.borderRadius="8px";
-    var lg=d.querySelector(".foto-legenda"); if(lg)lg.textContent="📍 "+l.join("\n");
+    var lg=d.querySelector(".foto-legenda"); if(lg)lg.textContent="📍 "+it.linhas.join("\n");
     d.style.marginBottom="10px";
     box.appendChild(d);
   });
@@ -810,7 +1138,7 @@ function fecharModal(){$("modal").style.display="none";document.body.style.overf
 $("modalClose").addEventListener("click",fecharModal);
 $("modalShare").addEventListener("click",function(){
   if(!registroModal)return;
-  compartilhar(registroModal.fotos,linhasCarimbo(registroModal.endereco,registroModal.numero,registroModal.medidores));
+  compartilharRegistro(registroModal);
 });
 
 /* ===== BACKUP ===== */
@@ -869,6 +1197,12 @@ data.value=hoje(); medidores=[novoMedidor()]; renderMedidores(); renderFotos(); 
   try{await migrar();}catch(err){alert("Não foi possível passar os registros antigos para o armazenamento novo. Exporte o backup antes de continuar.");}
   registros=((await todosRegistros())||[]).map(normalizar).sort(function(a,b){return b.id-a.id;});
   rascunhos=(await kvGet("rascunhos"))||{};
+  ajustesCal=(await kvGet("ajustesCal").catch(function(){return null;}))||{};
+  var ult=Number(await kvGet("ultimaEtapa").catch(function(){return 0;}))||0;
+  var doDia=etapaDoDia(hoje()).etapa||ult;
+  if(doDia&&!etapaAtual){etapaAtual=doDia;stageSelect.value=String(doDia);carregarRascunho(doDia);}
+  if(!editandoId&&!cheio(endereco.value))data.value=hoje();
+  mostrarCal();
   render(); mostrarEspaco();
   recuperarFotos(false);
 })();
